@@ -1,0 +1,444 @@
+.site {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  z-index: 999;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  color: var(--navy-900);
+  border-radius: 4px;
+}
+
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
+  background: rgba(12, 25, 41, 0.88);
+  backdrop-filter: blur(12px);
+}
+
+.header-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.brand:hover {
+  color: var(--accent-hover);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.35rem;
+}
+
+.nav a {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: var(--ink);
+}
+
+.main {
+  flex: 1;
+}
+
+/* —— Hero —— */
+.hero {
+  position: relative;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  min-height: min(78vh, 720px);
+  display: flex;
+  align-items: stretch;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    url('/brand/hero-banner.png') center center / cover no-repeat;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(6, 13, 24, 0.94) 0%,
+    rgba(12, 25, 41, 0.82) 38%,
+    rgba(12, 25, 41, 0.45) 72%,
+    rgba(12, 25, 41, 0.25) 100%
+  );
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: var(--max);
+  margin: 0 auto;
+  width: 100%;
+  padding: 4rem 1.5rem 4.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .hero-inner {
+    padding-top: 5rem;
+    padding-bottom: 5.5rem;
+  }
+}
+
+.hero-grid {
+  display: grid;
+  gap: 2rem;
+  align-items: start;
+  max-width: 38rem;
+}
+
+@media (min-width: 900px) {
+  .hero-grid {
+    max-width: 32rem;
+  }
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.1rem, 4.5vw, 3rem);
+  margin: 0 0 1.1rem;
+  color: #fff;
+  text-shadow: 0 1px 32px rgba(0, 0, 0, 0.35);
+}
+
+.lead {
+  font-size: 1.125rem;
+  max-width: 40ch;
+  margin-bottom: 1.75rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.65;
+}
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--navy-900);
+  box-shadow: 0 2px 16px rgba(147, 197, 253, 0.25);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  color: var(--navy-900);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border: 1px solid var(--line-strong);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.hero-card {
+  margin-top: 2.25rem;
+  background: rgba(19, 42, 69, 0.65);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 1.35rem 1.5rem;
+  backdrop-filter: blur(10px);
+  max-width: 36rem;
+}
+
+.hero-card-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+
+.hero-card .brand-line {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* —— Focus split —— */
+.focus {
+  border-top: 1px solid var(--line);
+  background: var(--navy-900);
+}
+
+.focus-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem;
+}
+
+.focus h2 {
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  margin: 0 0 0.35rem;
+}
+
+.focus > .focus-inner > p.sub {
+  max-width: 52ch;
+  margin-bottom: 2rem;
+  color: var(--ink-muted);
+}
+
+.focus-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 700px) {
+  .focus-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.focus-card {
+  padding: 1.5rem 1.6rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.focus-card h3 {
+  font-size: 1.125rem;
+  margin: 0 0 0.5rem;
+}
+
+.focus-card p {
+  font-size: 0.98rem;
+  color: var(--ink-muted);
+}
+
+/* —— Services —— */
+.section {
+  border-top: 1px solid var(--line);
+  background: var(--navy-950);
+}
+
+.section-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+
+.section h2 {
+  font-size: clamp(1.65rem, 3vw, 2rem);
+  margin: 0 0 0.5rem;
+}
+
+.section-intro {
+  max-width: 56ch;
+  margin-bottom: 2.25rem;
+  color: var(--ink-muted);
+}
+
+.grid-services {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .grid-services {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .grid-services {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.card {
+  padding: 1.45rem 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-elevated);
+  box-shadow: var(--shadow);
+  height: 100%;
+}
+
+.card h3 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+.card p {
+  font-size: 0.92rem;
+  color: var(--ink-muted);
+  line-height: 1.55;
+}
+
+.icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+.icon--compact {
+  font-size: 0.65rem;
+  letter-spacing: -0.03em;
+}
+
+/* —— Brand band (second asset) —— */
+.brand-band {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--navy-900);
+  overflow: hidden;
+}
+
+.brand-band img {
+  display: block;
+  width: 100%;
+  height: clamp(100px, 18vw, 160px);
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.95;
+}
+
+/* —— CTA —— */
+.cta-band {
+  border-top: 1px solid var(--line);
+  background: linear-gradient(
+    180deg,
+    var(--navy-800) 0%,
+    var(--navy-900) 55%
+  );
+}
+
+.cta-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+}
+
+.cta-band h2 {
+  font-size: clamp(1.45rem, 3vw, 1.9rem);
+  margin: 0 0 0.75rem;
+}
+
+.cta-band .sub {
+  max-width: 44ch;
+  margin: 0 auto 1.5rem;
+  color: var(--ink-muted);
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--ink-faint);
+  background: var(--navy-950);
+}
+
+.footer a {
+  color: var(--ink-muted);
+}
+
+.footer a:hover {
+  color: var(--accent);
+}
