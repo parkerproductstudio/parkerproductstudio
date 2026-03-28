@@ -5,6 +5,6 @@ Landing site and API for Parker Product Studio — a React (Vite) frontend and E
 ## Scripts
 
 - `npm install` — install dependencies
-- `npm run dev` — run client and server in development
+- `npm run dev` — run frontend and server in development
 - `npm run build` — production build
 - `npm start` — run the production server

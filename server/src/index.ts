@@ -27,7 +27,7 @@ app.get('/api/meta', (_req, res) => {
 })
 
 if (isProd) {
-  const clientDist = path.join(__dirname, '../../client/dist')
+  const clientDist = path.join(__dirname, '../../frontend/dist')
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Not found' })
