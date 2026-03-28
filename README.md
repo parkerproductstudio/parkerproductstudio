@@ -33,7 +33,7 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
      - `https://<your-app>.onrender.com/**` (if applicable)
      - `http://localhost:5173/**` (local Vite)
      - `http://localhost:5173/auth/callback` and `https://parkerproductstudio.com/auth/callback` (explicit callback path; wildcards often cover these)
-   Invite, magic-link, and recovery emails use **PKCE** and return with `?code=` in the URL. This app exchanges that code and sends you to `/projects`.
+   Invite, magic-link, and recovery emails use **PKCE** and return with `?code=` in the URL. This app exchanges that code and sends you to **`/projects`** (or **`/auth/update-password`** after a **password reset** link). If the link sits in your inbox too long, Supabase returns `#error=…&error_code=otp_expired` on the homepage—the **Sign in** page explains that and offers **Send reset link**.
 4. **SQL Editor**: run `supabase/migrations/001_home_services_app.sql` to create `home_services_app_notes` and RLS policies.
 5. Copy **Project URL** and keys from **Settings → API** into `.env`.
 

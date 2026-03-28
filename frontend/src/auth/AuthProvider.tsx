@@ -5,9 +5,14 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Session, SupabaseClient } from '@supabase/supabase-js'
+import type { AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabase-js'
 import { useNavigate } from 'react-router-dom'
 
+import {
+  clearUrlHash,
+  parseAuthHashError,
+  sessionUsesRecoveryAmr,
+} from './authUrlUtils'
 import { AuthContext } from './authContext'
 import { createSupabaseBrowserClient } from '../lib/supabaseClient'
 
@@ -29,20 +34,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     async function boot() {
+      const hashErr = parseAuthHashError()
+      if (hashErr) {
+        clearUrlHash()
+        const q = new URLSearchParams({
+          auth_error: hashErr.code,
+          ...(hashErr.description
+            ? { detail: hashErr.description.slice(0, 500) }
+            : {}),
+        })
+        navigate(`/login?${q.toString()}`, { replace: true })
+      }
+
       const url = new URL(window.location.href)
       const hasCode = url.searchParams.has('code')
       const pathOk = CALLBACK_PATHS.has(url.pathname)
 
       if (hasCode && pathOk && !pkceHandledRef.current) {
         pkceHandledRef.current = true
-        const { error } = await client.auth.exchangeCodeForSession(
+        const { data, error } = await client.auth.exchangeCodeForSession(
           window.location.href,
         )
         if (error) {
           console.error('Supabase auth callback:', error.message)
           pkceHandledRef.current = false
-        } else if (!cancelled) {
-          navigate('/projects', { replace: true })
+        } else if (!cancelled && data.session) {
+          window.history.replaceState(null, '', url.pathname)
+          if (sessionUsesRecoveryAmr(data.session)) {
+            navigate('/auth/update-password', { replace: true })
+          } else {
+            navigate('/projects', { replace: true })
+          }
         }
       }
 
@@ -58,8 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = client.auth.onAuthStateChange((_event, s) => {
+    } = client.auth.onAuthStateChange((event: AuthChangeEvent, s) => {
       setSession(s)
+      if (event === 'PASSWORD_RECOVERY' && s) {
+        navigate('/auth/update-password', { replace: true })
+      }
     })
 
     return () => {

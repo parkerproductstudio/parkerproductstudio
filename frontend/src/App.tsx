@@ -5,6 +5,7 @@ import { HomeServicesAppPage } from './projects/home-services-app'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
+import { UpdatePasswordPage } from './pages/UpdatePasswordPage'
 import { ProjectsHubPage } from './pages/ProjectsHubPage'
 import { ProjectsLayout } from './pages/ProjectsLayout'
 
@@ -16,6 +17,7 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="projects" element={<ProjectsLayout />}>
           <Route index element={<ProjectsHubPage />} />
