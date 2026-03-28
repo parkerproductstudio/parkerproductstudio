@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
 
 export function LoginPage() {
-  const { supabase } = useAuth()
+  const { supabase, session, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from =
@@ -15,6 +15,11 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (loading || !session) return
+    navigate(from, { replace: true })
+  }, [loading, session, from, navigate])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

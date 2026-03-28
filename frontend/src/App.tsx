@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { HomeServicesAppPage } from './projects/home-services-app'
+import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProjectsHubPage } from './pages/ProjectsHubPage'
@@ -14,6 +15,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="projects" element={<ProjectsLayout />}>
           <Route index element={<ProjectsHubPage />} />

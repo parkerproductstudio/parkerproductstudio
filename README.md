@@ -25,8 +25,22 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. **Authentication → Providers**: enable Email; consider disabling public sign-ups and creating your user via **Authentication → Users** (invite or add user).
-3. **SQL Editor**: run `supabase/migrations/001_home_services_app.sql` to create `home_services_app_notes` and RLS policies.
-4. Copy **Project URL** and keys from **Settings → API** into `.env`.
+3. **Authentication → URL Configuration**
+   - **Site URL**: your production origin, e.g. `https://parkerproductstudio.com`
+   - **Redirect URLs**: add at least:
+     - `https://parkerproductstudio.com/**`
+     - `https://www.parkerproductstudio.com/**` (if you use `www`)
+     - `https://<your-app>.onrender.com/**` (if applicable)
+     - `http://localhost:5173/**` (local Vite)
+     - `http://localhost:5173/auth/callback` and `https://parkerproductstudio.com/auth/callback` (explicit callback path; wildcards often cover these)
+   Invite, magic-link, and recovery emails use **PKCE** and return with `?code=` in the URL. This app exchanges that code and sends you to `/projects`.
+4. **SQL Editor**: run `supabase/migrations/001_home_services_app.sql` to create `home_services_app_notes` and RLS policies.
+5. Copy **Project URL** and keys from **Settings → API** into `.env`.
+
+### Users and passwords
+
+- **New user with a password**: **Authentication → Users → Add user** — enter email and password, enable **Auto Confirm User** (wording may vary) so they can sign in immediately.
+- **Existing user**: open the user in **Users** → use **Send password recovery** (or **Reset password**) so they get an email; after the URL fix above, the link should complete in the app. There is often **no** “type a new password in the dashboard” field for security reasons; recovery email or delete-and-recreate the user are the usual options.
 
 ## Deploy on Render (single Web Service)
 
