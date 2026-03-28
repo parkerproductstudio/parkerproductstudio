@@ -4,11 +4,14 @@ import { fileURLToPath } from 'node:url'
 import cors from 'cors'
 import express from 'express'
 
+import { homeServicesAppRouter } from './projects/home-services-app/index.js'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
 const PORT = Number(process.env.PORT) || 3001
 
 const app = express()
+app.use(express.json())
 
 if (!isProd) {
   app.use(cors({ origin: 'http://localhost:5173' }))
@@ -25,6 +28,8 @@ app.get('/api/meta', (_req, res) => {
       'Principal product engineering for consumer and business applications—with AI agents when they are the right tool.',
   })
 })
+
+app.use('/api/projects/home-services-app', homeServicesAppRouter)
 
 if (isProd) {
   const clientDist = path.join(__dirname, '../../frontend/dist')

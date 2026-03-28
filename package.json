@@ -1,11 +1,11 @@
 {
   "name": "parker-product-studio",
   "private": true,
-  "workspaces": ["frontend", "server"],
+  "workspaces": ["frontend", "backend"],
   "scripts": {
-    "dev": "concurrently -n server,frontend -c blue,green \"npm run dev -w server\" \"npm run dev -w frontend\"",
-    "build": "npm run build -w frontend && npm run build -w server",
-    "start": "npm run start -w server"
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w frontend && npm run build -w backend",
+    "start": "npm run start -w backend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
