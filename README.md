@@ -19,12 +19,12 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
 | `VITE_SUPABASE_ANON_KEY` | Frontend | Supabase anon (public) key |
 | `SUPABASE_URL` | Server | Same project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Service role key (never expose to browser) |
-| `ALLOWED_ADMIN_EMAILS` | Server | Optional comma-separated allowlist for `/api/projects/*` routes |
+| `ALLOWED_ADMIN_EMAILS` | Server | Comma-separated emails allowed into `/projects` and `/api/projects/*`. **Empty = nobody** (use this with public sign-up so random accounts stay blocked until you add them). |
 
 ## Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. **Authentication → Providers**: enable Email; consider disabling public sign-ups and creating your user via **Authentication → Users** (invite or add user).
+2. **Authentication → Providers**: enable Email. For **public sign-up** (this app has `/signup`), leave sign-ups enabled; only addresses in `ALLOWED_ADMIN_EMAILS` can open the private project areas. You can instead disable sign-ups and add users only via **Authentication → Users** if you prefer a closed directory.
 3. **Authentication → URL Configuration**
    - **Site URL**: your production origin, e.g. `https://parkerproductstudio.com`
    - **Redirect URLs**: add at least:
@@ -69,6 +69,7 @@ Point the domain at the new Web Service instead of the static site, or delete th
 | Path | Access |
 |------|--------|
 | `/` | Public landing |
-| `/login` | Sign in (Supabase email + password) |
-| `/projects` | Authenticated — project list |
+| `/login` | Sign in (email + password; forgot password on the same page) |
+| `/signup` | Public sign up (email confirmation follows your Supabase settings) |
+| `/projects` | Signed in **and** email allowlisted — project list |
 | `/projects/home-services-app` | Authenticated — Home Services App experiment |

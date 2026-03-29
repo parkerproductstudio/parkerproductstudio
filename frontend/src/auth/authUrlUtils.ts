@@ -1,22 +1,47 @@
 import type { Session } from '@supabase/supabase-js'
 
-/** Parse Supabase error redirects: `#error=access_denied&error_code=otp_expired&...` */
-export function parseAuthHashError(): {
+function decodeDescription(raw: string): string {
+  try {
+    return decodeURIComponent(raw.replace(/\+/g, ' '))
+  } catch {
+    return raw
+  }
+}
+
+/**
+ * Supabase may put errors in the query string (e.g. /auth/callback?error=...)
+ * or in the hash (#error=...).
+ */
+export function parseAuthRedirectError(): {
   code: string
   description: string
 } | null {
-  const raw = window.location.hash?.replace(/^#/, '') ?? ''
-  if (!raw) return null
-  const params = new URLSearchParams(raw)
-  if (!params.get('error')) return null
-  const code = params.get('error_code') || params.get('error') || 'unknown'
-  let description = params.get('error_description') ?? ''
-  try {
-    description = decodeURIComponent(description.replace(/\+/g, ' '))
-  } catch {
-    /* keep raw */
+  const url = new URL(window.location.href)
+
+  let err = url.searchParams.get('error')
+  let code = url.searchParams.get('error_code')
+  let description = url.searchParams.get('error_description') ?? ''
+
+  if (!err) {
+    const raw = url.hash?.replace(/^#/, '') ?? ''
+    if (!raw) return null
+    const hp = new URLSearchParams(raw)
+    err = hp.get('error')
+    code = hp.get('error_code')
+    description = hp.get('error_description') ?? ''
   }
-  return { code, description }
+
+  if (!err) return null
+
+  return {
+    code: code || err || 'unknown',
+    description: decodeDescription(description),
+  }
+}
+
+/** Remove query + hash after handling auth redirect errors. */
+export function stripAuthRedirectFromUrl(): void {
+  window.history.replaceState(null, '', window.location.pathname)
 }
 
 export function clearUrlHash(): void {

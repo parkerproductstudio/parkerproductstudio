@@ -9,9 +9,9 @@ import type { AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabas
 import { useNavigate } from 'react-router-dom'
 
 import {
-  clearUrlHash,
-  parseAuthHashError,
+  parseAuthRedirectError,
   sessionUsesRecoveryAmr,
+  stripAuthRedirectFromUrl,
 } from './authUrlUtils'
 import { AuthContext } from './authContext'
 import { createSupabaseBrowserClient } from '../lib/supabaseClient'
@@ -34,13 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     async function boot() {
-      const hashErr = parseAuthHashError()
-      if (hashErr) {
-        clearUrlHash()
+      const redirectErr = parseAuthRedirectError()
+      if (redirectErr && CALLBACK_PATHS.has(window.location.pathname)) {
+        stripAuthRedirectFromUrl()
         const q = new URLSearchParams({
-          auth_error: hashErr.code,
-          ...(hashErr.description
-            ? { detail: hashErr.description.slice(0, 500) }
+          auth_error: redirectErr.code,
+          ...(redirectErr.description
+            ? { detail: redirectErr.description.slice(0, 500) }
             : {}),
         })
         navigate(`/login?${q.toString()}`, { replace: true })

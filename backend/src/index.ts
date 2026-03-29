@@ -5,6 +5,7 @@ import cors from 'cors'
 import express from 'express'
 
 import { homeServicesAppRouter } from './projects/home-services-app/index.js'
+import { authRouter } from './routes/auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
@@ -29,6 +30,7 @@ app.get('/api/meta', (_req, res) => {
   })
 })
 
+app.use('/api/auth', authRouter)
 app.use('/api/projects/home-services-app', homeServicesAppRouter)
 
 if (isProd) {

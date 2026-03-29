@@ -62,6 +62,9 @@ export function LandingPage() {
             <Link to="/login" className="nav-link-btn">
               Sign in
             </Link>
+            <Link to="/signup" className="nav-link-btn">
+              Sign up
+            </Link>
           </nav>
         </div>
       </header>
