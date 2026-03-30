@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
+import { useProjectAccess } from '../auth/useProjectAccess'
 import { apiUrl } from '../lib/apiUrl'
 
 type Meta = {
@@ -13,6 +14,7 @@ const CONTACT_EMAIL = 'eric.jason.parker@gmail.com'
 
 export function LandingPage() {
   const { session, loading, supabase } = useAuth()
+  const { projectAccess } = useProjectAccess()
   const [meta, setMeta] = useState<Meta | null>(null)
 
   const signedIn = Boolean(supabase && !loading && session)
@@ -69,6 +71,11 @@ export function LandingPage() {
             <a href="#focus">Applications</a>
             <a href="#services">Capabilities</a>
             <a href="#contact">Contact</a>
+            {signedIn && projectAccess ? (
+              <Link to="/projects" className="nav-link-btn">
+                Projects
+              </Link>
+            ) : null}
             {signedIn ? (
               <button
                 type="button"
