@@ -6,7 +6,10 @@ export function createSupabaseBrowserClient(): SupabaseClient | null {
   if (!url || !key) return null
   return createClient(url, key, {
     auth: {
-      flowType: 'pkce',
+      // Implicit flow (default for client-only SPAs): email confirm / magic links put
+      // tokens in the URL hash, so links work from any device. Forced PKCE breaks
+      // confirmation when the email is opened in another browser (no code_verifier).
+      flowType: 'implicit',
       detectSessionInUrl: true,
       persistSession: true,
       autoRefreshToken: true,

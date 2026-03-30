@@ -10,6 +10,7 @@ export function ProtectedRoute() {
   const { session, loading, supabase } = useAuth()
   const location = useLocation()
   const [access, setAccess] = useState<AccessState>('unknown')
+  const [accessErrorDetail, setAccessErrorDetail] = useState<string | null>(null)
 
   useEffect(() => {
     if (loading) return
@@ -20,6 +21,7 @@ export function ProtectedRoute() {
 
     let cancelled = false
     setAccess('unknown')
+    setAccessErrorDetail(null)
 
     void fetch('/api/auth/project-access', {
       headers: { Authorization: `Bearer ${session.access_token}` },
@@ -29,7 +31,20 @@ export function ProtectedRoute() {
           await supabase?.auth.signOut()
           return { kind: 'abort' as const }
         }
-        if (!r.ok) return { kind: 'error' as const }
+        if (!r.ok) {
+          let message: string | undefined
+          try {
+            const body = (await r.json()) as { error?: string }
+            if (typeof body.error === 'string') message = body.error
+          } catch {
+            /* ignore */
+          }
+          return {
+            kind: 'error' as const,
+            status: r.status,
+            message,
+          }
+        }
         const body = (await r.json()) as { projectAccess?: boolean }
         return {
           kind: 'ok' as const,
@@ -38,11 +53,23 @@ export function ProtectedRoute() {
       })
       .then((data) => {
         if (cancelled || data.kind === 'abort') return
-        if (data.kind === 'error') setAccess('error')
-        else setAccess(data.projectAccess ? 'allowed' : 'denied')
+        if (data.kind === 'error') {
+          setAccessErrorDetail(
+            data.status === 503
+              ? data.message ??
+                  'The server cannot validate your session. On Render (or any host), set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the Web Service—not only the VITE_ variables used at build time.'
+              : data.message ?? `Unexpected response (${data.status}).`,
+          )
+          setAccess('error')
+        } else setAccess(data.projectAccess ? 'allowed' : 'denied')
       })
       .catch(() => {
-        if (!cancelled) setAccess('error')
+        if (!cancelled) {
+          setAccessErrorDetail(
+            'Network error while contacting the server. If you use local dev, ensure the API is running and Vite proxies /api to the backend.',
+          )
+          setAccess('error')
+        }
       })
 
     return () => {
@@ -73,7 +100,8 @@ export function ProtectedRoute() {
           <div className="auth-panel">
             <h1 className="auth-title">Could not verify access</h1>
             <p className="auth-sub">
-              The server could not confirm project access. Try again in a moment.
+              {accessErrorDetail ??
+                'The server could not confirm project access. Try again in a moment.'}
             </p>
           </div>
         </main>

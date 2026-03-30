@@ -454,6 +454,14 @@
   color: var(--accent-hover);
 }
 
+button.nav-link-btn {
+  font: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
 .auth-loading {
   min-height: 50dvh;
   display: flex;

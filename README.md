@@ -33,7 +33,8 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
      - `https://<your-app>.onrender.com/**` (if applicable)
      - `http://localhost:5173/**` (local Vite)
      - `http://localhost:5173/auth/callback` and `https://parkerproductstudio.com/auth/callback` (explicit callback path; wildcards often cover these)
-   Invite, magic-link, and recovery emails use **PKCE** and return with `?code=` in the URL. This app exchanges that code and sends you to **`/projects`** (or **`/auth/update-password`** after a **password reset** link). If the link sits in your inbox too long, Supabase returns `#error=…&error_code=otp_expired` on the homepage—the **Sign in** page explains that and offers **Send reset link**.
+     - Same host paths **`/auth/confirm`** if you customize email templates to use `token_hash` (see [Supabase PKCE email docs](https://supabase.com/docs/guides/auth/passwords#pkce-flow)).
+   The browser client uses the **implicit** session flow so **email confirmation links work even if the user opens the email on another device** (forced PKCE breaks that because the `code_verifier` lives in the browser that started sign-up). Links may return **`?code=`** (still exchanged when present) or **`#access_token=…`** in the URL; **`AuthProvider`** finishes the session and routes you to **`/projects`** or **`/auth/update-password`** after recovery. If the link sits in your inbox too long, Supabase may return `#error=…&error_code=otp_expired`—the **Sign in** page explains that and offers **Send reset link**.
 4. **SQL Editor**: run `supabase/migrations/001_home_services_app.sql` to create `home_services_app_notes` and RLS policies.
 5. Copy **Project URL** and keys from **Settings → API** into `.env`.
 
@@ -49,7 +50,7 @@ Use a **Web Service** (not a separate static site) so Express serves both the AP
 - **Root directory**: repository root (empty) or leave default.
 - **Build command**: `npm install && npm run build`
 - **Start command**: `npm start`
-- **Environment**: set the same variables as in `.env` (including all `VITE_*` vars so the **build** embeds them in the client bundle).
+- **Environment**: set the same variables as in `.env` (including all `VITE_*` vars so the **build** embeds them in the client bundle). **`SUPABASE_URL`** and **`SUPABASE_SERVICE_ROLE_KEY`** must be set here too—`/api/auth/project-access` runs on the server; without them, sign-in works in the browser but `/projects` shows “Could not verify access”.
 
 After deploy, add your custom domain under the service **Settings → Custom Domains**.
 
@@ -71,5 +72,6 @@ Point the domain at the new Web Service instead of the static site, or delete th
 | `/` | Public landing |
 | `/login` | Sign in (email + password; forgot password on the same page) |
 | `/signup` | Public sign up (email confirmation follows your Supabase settings) |
+| `/auth/callback`, `/auth/confirm` | Finish email links (implicit / PKCE / `token_hash`); no manual UI |
 | `/projects` | Signed in **and** email allowlisted — project list |
 | `/projects/home-services-app` | Authenticated — Home Services App experiment |

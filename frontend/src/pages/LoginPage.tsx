@@ -4,6 +4,12 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useAuth } from '../auth/useAuth'
 
 function authErrorMessage(code: string, detail: string | null): string {
+  if (code === 'verify_failed') {
+    return (
+      detail ??
+      'This confirmation link could not be verified. Try signing up again or request a new confirmation email from Supabase (Authentication → Users).'
+    )
+  }
   if (code === 'otp_expired' || code === 'access_denied') {
     return 'This sign-in link has expired or was already used. Password reset links are short-lived. Send yourself a fresh reset email below, or sign in if you know your password.'
   }

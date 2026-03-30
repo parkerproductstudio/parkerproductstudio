@@ -9,6 +9,7 @@ import type { AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabas
 import { useNavigate } from 'react-router-dom'
 
 import {
+  normalizeAuthPathname,
   parseAuthRedirectError,
   sessionUsesRecoveryAmr,
   stripAuthRedirectFromUrl,
@@ -16,7 +17,21 @@ import {
 import { AuthContext } from './authContext'
 import { createSupabaseBrowserClient } from '../lib/supabaseClient'
 
-const CALLBACK_PATHS = new Set(['/', '/login', '/auth/callback'])
+const CALLBACK_PATHS = new Set([
+  '/',
+  '/login',
+  '/auth/callback',
+  '/auth/confirm',
+])
+
+const VERIFY_OTP_TYPES = new Set([
+  'signup',
+  'recovery',
+  'invite',
+  'magiclink',
+  'email_change',
+  'email',
+])
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), [])
@@ -34,8 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     async function boot() {
+      const pathname = normalizeAuthPathname(window.location.pathname)
       const redirectErr = parseAuthRedirectError()
-      if (redirectErr && CALLBACK_PATHS.has(window.location.pathname)) {
+      if (redirectErr && CALLBACK_PATHS.has(pathname)) {
         stripAuthRedirectFromUrl()
         const q = new URLSearchParams({
           auth_error: redirectErr.code,
@@ -44,11 +60,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             : {}),
         })
         navigate(`/login?${q.toString()}`, { replace: true })
+        return
       }
 
       const url = new URL(window.location.href)
       const hasCode = url.searchParams.has('code')
-      const pathOk = CALLBACK_PATHS.has(url.pathname)
+      const pathOk = CALLBACK_PATHS.has(pathname)
+      const token_hash = url.searchParams.get('token_hash')
+      const otpTypeRaw = url.searchParams.get('type')
+      const hadImplicitInHash = /access_token=/.test(url.hash)
+      const tokenHashOtpOk =
+        Boolean(token_hash && otpTypeRaw) &&
+        VERIFY_OTP_TYPES.has(otpTypeRaw ?? '')
+
+      if (pathOk && tokenHashOtpOk && token_hash && otpTypeRaw && !cancelled) {
+        const { data, error } = await client.auth.verifyOtp({
+          token_hash,
+          type: otpTypeRaw as
+            | 'signup'
+            | 'recovery'
+            | 'invite'
+            | 'magiclink'
+            | 'email_change'
+            | 'email',
+        })
+        if (error) {
+          console.error('Supabase verifyOtp:', error.message)
+          const q = new URLSearchParams({
+            auth_error: 'verify_failed',
+            detail: error.message.slice(0, 500),
+          })
+          navigate(`/login?${q.toString()}`, { replace: true })
+          return
+        }
+        if (!cancelled && data.session) {
+          window.history.replaceState(null, '', pathname)
+          setSession(data.session)
+          setRemoteReady(true)
+          if (sessionUsesRecoveryAmr(data.session)) {
+            navigate('/auth/update-password', { replace: true })
+          } else {
+            navigate('/projects', { replace: true })
+          }
+          return
+        }
+      }
 
       if (hasCode && pathOk && !pkceHandledRef.current) {
         pkceHandledRef.current = true
@@ -59,12 +115,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Supabase auth callback:', error.message)
           pkceHandledRef.current = false
         } else if (!cancelled && data.session) {
-          window.history.replaceState(null, '', url.pathname)
+          window.history.replaceState(null, '', pathname)
+          setSession(data.session)
+          setRemoteReady(true)
           if (sessionUsesRecoveryAmr(data.session)) {
             navigate('/auth/update-password', { replace: true })
           } else {
             navigate('/projects', { replace: true })
           }
+          return
         }
       }
 
@@ -74,6 +133,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) return
       setSession(s)
       setRemoteReady(true)
+
+      const cameFromUrlAuth = hasCode || tokenHashOtpOk || hadImplicitInHash
+      if (s && pathOk && cameFromUrlAuth) {
+        window.history.replaceState(null, '', pathname)
+        if (sessionUsesRecoveryAmr(s)) {
+          navigate('/auth/update-password', { replace: true })
+        } else {
+          navigate('/projects', { replace: true })
+        }
+      }
     }
 
     void boot()

@@ -1,5 +1,13 @@
 import type { Session } from '@supabase/supabase-js'
 
+/** Collapse trailing slashes so `/auth/callback/` matches `/auth/callback`. */
+export function normalizeAuthPathname(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return pathname.replace(/\/+$/, '') || '/'
+  }
+  return pathname
+}
+
 function decodeDescription(raw: string): string {
   try {
     return decodeURIComponent(raw.replace(/\+/g, ' '))

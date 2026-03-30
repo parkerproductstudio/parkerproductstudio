@@ -1,6 +1,7 @@
 /**
- * Supabase redirects email links (invite, recovery, magic link) here when
- * "Redirect URLs" includes /auth/callback. AuthProvider exchanges the ?code=.
+ * Supabase sends users here after email actions when "Redirect URLs" includes
+ * this path (or /auth/confirm with a token_hash template). AuthProvider handles
+ * ?code= (PKCE), ?token_hash=&type= (verifyOtp), or hash tokens (implicit).
  */
 export function AuthCallbackPage() {
   return (

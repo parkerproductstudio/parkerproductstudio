@@ -19,6 +19,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/auth/confirm" element={<AuthCallbackPage />} />
       <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="projects" element={<ProjectsLayout />}>

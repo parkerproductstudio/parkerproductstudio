@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '../auth/useAuth'
+
 type Meta = {
   name: string
   tagline: string
@@ -9,7 +11,14 @@ type Meta = {
 const CONTACT_EMAIL = 'eric.jason.parker@gmail.com'
 
 export function LandingPage() {
+  const { session, loading, supabase } = useAuth()
   const [meta, setMeta] = useState<Meta | null>(null)
+
+  const signedIn = Boolean(supabase && !loading && session)
+
+  async function handleSignOut() {
+    if (supabase) await supabase.auth.signOut()
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -59,12 +68,24 @@ export function LandingPage() {
             <a href="#focus">Applications</a>
             <a href="#services">Capabilities</a>
             <a href="#contact">Contact</a>
-            <Link to="/login" className="nav-link-btn">
-              Sign in
-            </Link>
-            <Link to="/signup" className="nav-link-btn">
-              Sign up
-            </Link>
+            {signedIn ? (
+              <button
+                type="button"
+                className="nav-link-btn"
+                onClick={() => void handleSignOut()}
+              >
+                Sign out
+              </button>
+            ) : (
+              <>
+                <Link to="/login" className="nav-link-btn">
+                  Sign in
+                </Link>
+                <Link to="/signup" className="nav-link-btn">
+                  Sign up
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
