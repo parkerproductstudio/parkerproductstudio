@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import dotenv from 'dotenv'
 import cors from 'cors'
 import express from 'express'
 
@@ -9,6 +10,8 @@ import { homeServicesAppRouter } from './projects/home-services-app/index.js'
 import { authRouter } from './routes/auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+// Repo-root .env (same file Vite uses). Without this, local API has no SUPABASE_* vars.
+dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 const isProd = process.env.NODE_ENV === 'production'
 const PORT = Number(process.env.PORT) || 3001
 
@@ -24,38 +27,27 @@ function resolveClientDist(): string | null {
 }
 
 const app = express()
+
+// Same pattern as BowlWise: single env var for the SPA origin(s). Default matches local Vite.
+const rawFrontend =
+  process.env.FRONTEND_URL?.trim() || 'http://localhost:5173'
+const frontendOrigins = rawFrontend
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+const corsOrigin: string | string[] =
+  frontendOrigins.length === 0
+    ? 'http://localhost:5173'
+    : frontendOrigins.length === 1
+      ? frontendOrigins[0]!
+      : frontendOrigins
+
+app.use(cors({ origin: corsOrigin }))
 app.use(express.json())
 
-function parseCorsOrigins(): string[] {
-  const raw = process.env.CORS_ORIGINS?.trim()
-  if (!raw) return []
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
-if (!isProd) {
-  app.use(cors({ origin: 'http://localhost:5173' }))
-} else {
-  const allowed = parseCorsOrigins()
-  if (allowed.length > 0) {
-    app.use(
-      cors({
-        origin(origin, callback) {
-          if (origin === undefined || allowed.includes(origin)) {
-            callback(null, true)
-            return
-          }
-          callback(null, false)
-        },
-      }),
-    )
-    console.log(
-      `[backend] CORS enabled for ${allowed.length} origin(s): ${allowed.join(', ')}`,
-    )
-  }
-}
+console.log(
+  `[backend] CORS allowed origin(s): ${Array.isArray(corsOrigin) ? corsOrigin.join(', ') : corsOrigin}`,
+)
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, uptime: process.uptime() })

@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express'
 
 import { getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 
-/** Validates Bearer JWT and sets `req.supabaseUser`. Does not enforce allowlist. */
+/** Validates Bearer JWT and sets `req.supabaseUser`. Does not enforce admin gate. */
 export const attachSupabaseUser: RequestHandler = async (req, res, next) => {
   const header = req.headers.authorization
   if (!header?.startsWith('Bearer ')) {

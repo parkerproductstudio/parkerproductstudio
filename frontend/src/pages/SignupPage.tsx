@@ -84,8 +84,8 @@ export function SignupPage() {
         <div className="auth-panel">
           <h1 className="auth-title">Create an account</h1>
           <p className="auth-sub">
-            Public sign up is open. Private project areas stay limited to allowed
-            accounts on the server.
+            Public sign up is open. Private project areas are limited to accounts
+            with admin access in the database.
           </p>
           {doneMessage ? (
             <p className="auth-info" role="status">

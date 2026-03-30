@@ -31,7 +31,7 @@ export function ProjectAccessDeniedPage() {
         <div className="auth-panel">
           <h1 className="auth-title">No project access</h1>
           <p className="auth-sub">
-            You are signed in, but this workspace is limited to specific accounts.
+            You are signed in, but this workspace is limited to admin accounts.
             If you think this is a mistake, contact the site owner.
           </p>
           <div className="cta-row" style={{ justifyContent: 'flex-start' }}>

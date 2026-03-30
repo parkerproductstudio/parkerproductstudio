@@ -1,26 +1,30 @@
 import type { RequestHandler } from 'express'
 
-import { parseAllowedEmails } from '../lib/allowedEmails.js'
+import { getSupabaseAdmin } from '../lib/supabaseAdmin.js'
+import { userHasProjectAccess } from '../lib/userProjectAccess.js'
 import { attachSupabaseUser } from './attachSupabaseUser.js'
 
-const enforceAllowlist: RequestHandler = (req, res, next) => {
-  const allowed = parseAllowedEmails()
-  if (allowed.length === 0) {
-    res.status(503).json({
-      error: 'Project API is not configured (set ALLOWED_ADMIN_EMAILS)',
-    })
+const enforceProjectAdmin: RequestHandler = async (req, res, next) => {
+  const svc = getSupabaseAdmin()
+  if (!svc) {
+    res.status(503).json({ error: 'Server auth is not configured' })
     return
   }
-  const email = req.supabaseUser?.email?.toLowerCase() ?? ''
-  if (!allowed.includes(email)) {
+  const userId = req.supabaseUser?.id
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  const allowed = await userHasProjectAccess(userId)
+  if (!allowed) {
     res.status(403).json({ error: 'Forbidden' })
     return
   }
   next()
 }
 
-/** JWT + ALLOWED_ADMIN_EMAILS gate (503 if unset, 403 if email not listed). */
+/** JWT + user_profiles.admin gate (403 if not admin). */
 export const requireSupabaseUser: RequestHandler[] = [
   attachSupabaseUser,
-  enforceAllowlist,
+  enforceProjectAdmin,
 ]

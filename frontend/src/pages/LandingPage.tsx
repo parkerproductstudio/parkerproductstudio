@@ -14,7 +14,7 @@ const CONTACT_EMAIL = 'eric.jason.parker@gmail.com'
 
 export function LandingPage() {
   const { session, loading, supabase } = useAuth()
-  const { projectAccess } = useProjectAccess()
+  const { projectAccess, checking: checkingProjectAccess } = useProjectAccess()
   const [meta, setMeta] = useState<Meta | null>(null)
 
   const signedIn = Boolean(supabase && !loading && session)
@@ -71,8 +71,17 @@ export function LandingPage() {
             <a href="#focus">Applications</a>
             <a href="#services">Capabilities</a>
             <a href="#contact">Contact</a>
-            {signedIn && projectAccess ? (
-              <Link to="/projects" className="nav-link-btn">
+            {signedIn && (projectAccess || checkingProjectAccess) ? (
+              <Link
+                to="/projects"
+                className="nav-link-btn"
+                aria-busy={checkingProjectAccess}
+                aria-label={
+                  checkingProjectAccess
+                    ? 'Projects, verifying access'
+                    : 'Projects'
+                }
+              >
                 Projects
               </Link>
             ) : null}

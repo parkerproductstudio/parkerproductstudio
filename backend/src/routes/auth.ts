@@ -1,14 +1,15 @@
 import { Router } from 'express'
 
-import { emailHasProjectAccess } from '../lib/allowedEmails.js'
+import { userHasProjectAccess } from '../lib/userProjectAccess.js'
 import { attachSupabaseUser } from '../middleware/attachSupabaseUser.js'
 
 export const authRouter = Router()
 
-authRouter.get('/project-access', attachSupabaseUser, (req, res) => {
+authRouter.get('/project-access', attachSupabaseUser, async (req, res) => {
   const user = req.supabaseUser!
+  const projectAccess = await userHasProjectAccess(user.id)
   res.json({
-    projectAccess: emailHasProjectAccess(user.email),
+    projectAccess,
     email: user.email ?? null,
   })
 })

@@ -11,7 +11,7 @@ Monorepo: **Vite + React** (`frontend/`), **Express** (`backend/`), optional **S
 
 ## Environment variables
 
-Copy `.env.example` to **`.env` in the repository root**. Vite is configured with `envDir` pointing at the root so `VITE_*` variables load for local dev.
+Copy `.env.example` to **`.env` in the repository root**. Vite is configured with `envDir` pointing at the root so `VITE_*` variables load for local dev. The **Express** app loads that same file via **`dotenv`** on startup so `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are available for `/api/auth/*` and project routes—without this, the SPA can be signed in while the Projects link never appears (API returns errors or `projectAccess: false`).
 
 | Variable | Where | Purpose |
 |----------|--------|---------|
@@ -19,14 +19,23 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
 | `VITE_SUPABASE_ANON_KEY` | Frontend | Supabase anon (public) key |
 | `SUPABASE_URL` | Server | Same project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Service role key (never expose to browser) |
-| `ALLOWED_ADMIN_EMAILS` | Server | Comma-separated emails allowed into `/projects` and `/api/projects/*`. **Empty = nobody** (use this with public sign-up so random accounts stay blocked until you add them). |
 | `VITE_API_BASE_URL` | Frontend (build) | Optional. Full origin of the Express API **with no trailing slash** when the SPA is on a different host (e.g. `https://your-api.onrender.com`). Omit for same-origin deploys. |
-| `CORS_ORIGINS` | Server | Production only: comma-separated **exact** origins allowed to call the API (e.g. `https://your-site.onrender.com`). Required for split static + API. |
+| `FRONTEND_URL` | Server | SPA origin(s) for **CORS** (same idea as BowlWise). Defaults to `http://localhost:5173`. For split static + API, set to your static site URL; comma-separate if you need `www` and apex. |
+| `VITE_DEV_PROXY_TARGET` | Frontend (Vite dev only) | Optional. Where Vite should proxy `/api` (default `http://127.0.0.1:3001`). Change if the backend uses another port. |
+
+### Local dev: `GET /api/auth/project-access` → 404
+
+Usually the browser is not talking to **this** repo’s API:
+
+1. **Backend not running** or **wrong port** — run `npm run dev` from the repo root (starts both). Check the terminal for `listening on http://localhost:3001` (or your `PORT`). Try `curl http://127.0.0.1:3001/api/health`.
+2. **Port 3001 used by another app** — another process can answer with a different 404. Free the port or set **`PORT=3002`** on the backend and **`VITE_DEV_PROXY_TARGET=http://127.0.0.1:3002`** in `.env`.
+3. **`localhost` / IPv6** — Vite proxies to **`127.0.0.1:3001`** by default to avoid `localhost` → `::1` mismatches.
+4. **`VITE_API_BASE_URL` in `.env`** — if set while developing, the browser calls that host instead of the Vite proxy. Remove it for local work, or point it at a server that actually implements `/api/auth/project-access`.
 
 ## Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. **Authentication → Providers**: enable Email. For **public sign-up** (this app has `/signup`), leave sign-ups enabled; only addresses in `ALLOWED_ADMIN_EMAILS` can open the private project areas. You can instead disable sign-ups and add users only via **Authentication → Users** if you prefer a closed directory.
+2. **Authentication → Providers**: enable Email. For **public sign-up** (this app has `/signup`), leave sign-ups enabled; access to `/projects` and project APIs is controlled by **`user_profiles.admin`** in Postgres (not env vars). New users get a profile with `admin = false` automatically.
 3. **Authentication → URL Configuration**
    - **Site URL**: your production origin, e.g. `https://parkerproductstudio.com`
    - **Redirect URLs**: add at least:
@@ -37,7 +46,16 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
      - `http://localhost:5173/auth/callback` and `https://parkerproductstudio.com/auth/callback` (explicit callback path; wildcards often cover these)
      - Same host paths **`/auth/confirm`** if you customize email templates to use `token_hash` (see [Supabase PKCE email docs](https://supabase.com/docs/guides/auth/passwords#pkce-flow)).
    The browser client uses the **implicit** session flow so **email confirmation links work even if the user opens the email on another device** (forced PKCE breaks that because the `code_verifier` lives in the browser that started sign-up). Links may return **`?code=`** (still exchanged when present) or **`#access_token=…`** in the URL; **`AuthProvider`** finishes the session and routes you to **`/projects`** or **`/auth/update-password`** after recovery. If the link sits in your inbox too long, Supabase may return `#error=…&error_code=otp_expired`—the **Sign in** page explains that and offers **Send reset link**.
-4. **SQL Editor**: run `supabase/migrations/001_home_services_app.sql` to create `home_services_app_notes` and RLS policies.
+4. **SQL Editor**: run migrations in order:
+   - `supabase/migrations/001_home_services_app.sql` — notes table and RLS.
+   - `supabase/migrations/002_user_profiles.sql` — `user_profiles` with `admin`, trigger for new sign-ups, backfill for existing users, and a seed that sets **`admin = true`** for `eric.jason.parker@gmail.com` if that auth user exists. **Add more admins** with:
+     ```sql
+     update public.user_profiles p
+     set admin = true, updated_at = now()
+     from auth.users u
+     where p.id = u.id and lower(u.email) = lower('other@example.com');
+     ```
+     Or edit the row in **Table Editor** (uses service role).
 5. Copy **Project URL** and keys from **Settings → API** into `.env`.
 
 ### Users and passwords
@@ -63,7 +81,7 @@ After deploy, add your custom domain under the service **Settings → Custom Dom
 - **Root directory:** repository root (recommended) or `backend` if you adjust install/build.
 - **Build command:** `npm install && npm run build -w backend`
 - **Start command:** `npm run start -w backend`
-- **Environment:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ADMIN_EMAILS`, and **`CORS_ORIGINS`** set to your **static site origin(s)** only (comma-separated, no path), e.g. `https://parkerproductstudio.onrender.com`. Include `www` separately if you use it. Logs will confirm CORS on boot.
+- **Environment:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and **`FRONTEND_URL`** = your **static site origin** (no path), e.g. `https://parkerproductstudio.onrender.com` — same pattern as BowlWise. Use a comma-separated list if you serve the SPA from both apex and `www`. The API logs allowed CORS origin(s) on startup.
 
 **Static / Web service** (Render Static Site or Web Service serving `frontend/dist`)
 
@@ -73,7 +91,7 @@ After deploy, add your custom domain under the service **Settings → Custom Dom
 
 **Supabase → URL configuration:** **Site URL** and **Redirect URLs** must use the **static site** origin (where users open the app), not the API host.
 
-**Unified alternative:** One Web Service from the repo root with `npm install && npm run build` and `npm start` — leave **`VITE_API_BASE_URL`** unset and **`CORS_ORIGINS`** unset; the SPA is served from the same origin as `/api`.
+**Unified alternative:** One Web Service from the repo root with `npm install && npm run build` and `npm start` — leave **`VITE_API_BASE_URL`** unset. Same-origin browser requests usually do not need CORS; you can still set **`FRONTEND_URL`** to your public site URL if you want the allowlist to match production.
 
 **API-only note:** If `frontend/dist` is missing next to the API, Express runs **API only** (no ENOENT). Split deploy is the intended use case for that layout.
 
@@ -98,5 +116,5 @@ Point the domain at the new Web Service instead of the static site, or delete th
 | `/login` | Sign in (email + password; forgot password on the same page) |
 | `/signup` | Public sign up (email confirmation follows your Supabase settings) |
 | `/auth/callback`, `/auth/confirm` | Finish email links (implicit / PKCE / `token_hash`); no manual UI |
-| `/projects` | Signed in **and** email allowlisted — project list |
+| `/projects` | Signed in **and** `user_profiles.admin` — project list |
 | `/projects/home-services-app` | Authenticated — Home Services App experiment |
