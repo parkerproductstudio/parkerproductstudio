@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import { ProtectedRoute } from './auth/ProtectedRoute'
-import { HomeServicesAppPage } from './projects/home-services-app'
+import { AdminRoute } from './auth/AdminRoute'
+import { SignedInRoute } from './auth/SignedInRoute'
+import { EmbedHomeServicesPage, HomeServicesAppPage } from './projects/home-services-app'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
@@ -21,10 +22,16 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/confirm" element={<AuthCallbackPage />} />
       <Route path="/auth/update-password" element={<UpdatePasswordPage />} />
-      <Route element={<ProtectedRoute />}>
+      <Route
+        path="/embed/home-services/:companySlug"
+        element={<EmbedHomeServicesPage />}
+      />
+      <Route element={<SignedInRoute />}>
         <Route path="projects" element={<ProjectsLayout />}>
           <Route index element={<ProjectsHubPage />} />
-          <Route path="home-services-app" element={<HomeServicesAppPage />} />
+          <Route element={<AdminRoute />}>
+            <Route path="home-services-app" element={<HomeServicesAppPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

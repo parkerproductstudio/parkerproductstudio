@@ -108,8 +108,15 @@ export function HomeServicesAppPage() {
       <header className="project-app-header">
         <h1>Home Services App</h1>
         <p className="project-app-lead">
-          Experimental workspace. Data lives in Supabase with row-level security
-          per user. The Express API route below checks your JWT server-side.
+          Multi-tenant embed intake: each company has an embed key and allowed
+          origins. Customers use the public widget (Claude Sonnet on the server);
+          this page is for studio admins and experiments.{' '}
+          <Link to="/embed/home-services/parker-electric">
+            Open Parker Electric embed preview →
+          </Link>{' '}
+          (set <code>VITE_HOME_SERVICES_EMBED_KEY</code> in <code>.env</code> to
+          the key from <code>home_services_companies</code> after migration{' '}
+          <code>003</code>.)
         </p>
       </header>
 

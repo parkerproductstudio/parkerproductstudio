@@ -5,15 +5,18 @@ export function ProjectsHubPage() {
     <div className="projects-hub">
       <h1 className="projects-hub-title">Projects</h1>
       <p className="projects-hub-intro">
-        Signed-in experiments. Promote any of these to a public page or a
-        separate deploy when you are ready.
+        Click on some of our publicly available projects below.
       </p>
+
       <ul className="projects-cards">
         <li>
-          <Link className="project-card" to="/projects/home-services-app">
-            <span className="project-card-name">Home Services App</span>
+          <Link
+            className="project-card"
+            to="/embed/home-services/parker-electric"
+          >
+            <span className="project-card-name">Home Services</span>
             <span className="project-card-desc">
-              First side project — notes and API smoke test.
+              Customer intake chat (Parker Electric). Opens the embed widget.
             </span>
           </Link>
         </li>

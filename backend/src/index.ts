@@ -6,7 +6,10 @@ import dotenv from 'dotenv'
 import cors from 'cors'
 import express from 'express'
 
-import { homeServicesAppRouter } from './projects/home-services-app/index.js'
+import {
+  homeServicesAppRouter,
+  homeServicesEmbedRouter,
+} from './projects/home-services-app/index.js'
 import { authRouter } from './routes/auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -28,6 +31,13 @@ function resolveClientDist(): string | null {
 
 const app = express()
 
+function isHomeServicesEmbedApiPath(pathname: string): boolean {
+  return (
+    pathname === '/api/public/home-services' ||
+    pathname.startsWith('/api/public/home-services/')
+  )
+}
+
 // Same pattern as BowlWise: single env var for the SPA origin(s). Default matches local Vite.
 const rawFrontend =
   process.env.FRONTEND_URL?.trim() || 'http://localhost:5173'
@@ -42,8 +52,25 @@ const corsOrigin: string | string[] =
       ? frontendOrigins[0]!
       : frontendOrigins
 
-app.use(cors({ origin: corsOrigin }))
-app.use(express.json())
+app.use((req, res, next) => {
+  if (!isHomeServicesEmbedApiPath(req.path)) return next()
+  cors({
+    origin: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-Embed-Key'],
+    maxAge: 86_400,
+  })(req, res, next)
+})
+
+app.use((req, res, next) => {
+  if (isHomeServicesEmbedApiPath(req.path)) return next()
+  cors({ origin: corsOrigin })(req, res, next)
+})
+
+app.use((req, res, next) => {
+  const limit = isHomeServicesEmbedApiPath(req.path) ? '12mb' : '100kb'
+  express.json({ limit })(req, res, next)
+})
 
 console.log(
   `[backend] CORS allowed origin(s): ${Array.isArray(corsOrigin) ? corsOrigin.join(', ') : corsOrigin}`,
@@ -63,6 +90,7 @@ app.get('/api/meta', (_req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/projects/home-services-app', homeServicesAppRouter)
+app.use('/api/public/home-services', homeServicesEmbedRouter)
 
 let prodClientDist: string | null = null
 if (isProd) {

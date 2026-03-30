@@ -22,6 +22,9 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
 | `VITE_API_BASE_URL` | Frontend (build) | Optional. Full origin of the Express API **with no trailing slash** when the SPA is on a different host (e.g. `https://your-api.onrender.com`). Omit for same-origin deploys. |
 | `FRONTEND_URL` | Server | SPA origin(s) for **CORS** (same idea as BowlWise). Defaults to `http://localhost:5173`. For split static + API, set to your static site URL; comma-separate if you need `www` and apex. |
 | `VITE_DEV_PROXY_TARGET` | Frontend (Vite dev only) | Optional. Where Vite should proxy `/api` (default `http://127.0.0.1:3001`). Change if the backend uses another port. |
+| `ANTHROPIC_API_KEY` | Server | Required for **Home Services embed** chat (`/api/public/home-services/*`). Never expose to the browser. |
+| `ANTHROPIC_MODEL` | Server | Optional. Defaults to **`claude-sonnet-4-20250514`** (Sonnet 4). Override if your account uses another snapshot, e.g. **`claude-sonnet-4-6`**. |
+| `VITE_HOME_SERVICES_EMBED_KEY` | Frontend (build) | Optional for local preview of `/embed/home-services/…`. Must match `home_services_companies.embed_public_key` for that tenant. You can use `?embedKey=` on the URL instead for quick tests. |
 
 ### Local dev: `GET /api/auth/project-access` → 404
 
@@ -35,7 +38,7 @@ Usually the browser is not talking to **this** repo’s API:
 ## Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. **Authentication → Providers**: enable Email. For **public sign-up** (this app has `/signup`), leave sign-ups enabled; access to `/projects` and project APIs is controlled by **`user_profiles.admin`** in Postgres (not env vars). New users get a profile with `admin = false` automatically.
+2. **Authentication → Providers**: enable Email. For **public sign-up** (this app has `/signup`), leave sign-ups enabled. Any **signed-in** user can open **`/projects`**; individual project cards may be **everyone** vs **admins only**. **`user_profiles.admin`** still gates **`/api/auth/project-access`**, the internal **Home Services — studio** page, and **`/api/projects/*`** routes that use **`requireSupabaseUser`**. New users get a profile with `admin = false` automatically.
 3. **Authentication → URL Configuration**
    - **Site URL**: your production origin, e.g. `https://parkerproductstudio.com`
    - **Redirect URLs**: add at least:
@@ -56,6 +59,8 @@ Usually the browser is not talking to **this** repo’s API:
      where p.id = u.id and lower(u.email) = lower('other@example.com');
      ```
      Or edit the row in **Table Editor** (uses service role).
+   - `supabase/migrations/003_home_services_embed_multitenant.sql` — companies (tenant), intake sessions, messages, private Storage bucket **`home-services-embed`**, and seed **Parker Electric** (`slug` `parker-electric`). The seed uses a **known demo** `embed_public_key`; **rotate it in production** (`update public.home_services_companies …`) and add each site’s origin to **`allowed_origins`** (browser `Origin` for requests from your hosted embed page or a customer’s site if you load the widget there).
+   - `supabase/migrations/004_home_services_session_contact.sql` — optional customer **name, phone, email, address** and **`contact_collected_at`** on **`home_services_sessions`** (filled by the embed API from the chat).
 5. Copy **Project URL** and keys from **Settings → API** into `.env`.
 
 ### Users and passwords
@@ -70,7 +75,7 @@ Use a **Web Service** (not a separate static site) so Express serves both the AP
 - **Root directory**: repository root (empty) or leave default.
 - **Build command**: `npm install && npm run build`
 - **Start command**: `npm start`
-- **Environment**: set the same variables as in `.env` (including all `VITE_*` vars so the **build** embeds them in the client bundle). **`SUPABASE_URL`** and **`SUPABASE_SERVICE_ROLE_KEY`** must be set here too—`/api/auth/project-access` runs on the server; without them, sign-in works in the browser but `/projects` shows “Could not verify access”.
+- **Environment**: set the same variables as in `.env` (including all `VITE_*` vars so the **build** embeds them in the client bundle). **`SUPABASE_URL`** and **`SUPABASE_SERVICE_ROLE_KEY`** must be set on the server for **`/api/auth/project-access`**, admin-only UI, and embed APIs; without them, sign-in may work in the browser while admin checks or APIs fail.
 
 After deploy, add your custom domain under the service **Settings → Custom Domains**.
 
@@ -105,7 +110,7 @@ Point the domain at the new Web Service instead of the static site, or delete th
 
 - `frontend/src/pages/` — marketing shell, login, projects hub.
 - `frontend/src/projects/home-services-app/` — first side project UI.
-- `backend/src/projects/home-services-app/` — API routes under `/api/projects/home-services-app/`.
+- `backend/src/projects/home-services-app/` — Authenticated routes under `/api/projects/home-services-app/` and **public embed** JSON under `/api/public/home-services/` (embed key + optional origin allowlist per company).
 - `supabase/migrations/` — SQL to run in Supabase.
 
 ## Routes
@@ -116,5 +121,6 @@ Point the domain at the new Web Service instead of the static site, or delete th
 | `/login` | Sign in (email + password; forgot password on the same page) |
 | `/signup` | Public sign up (email confirmation follows your Supabase settings) |
 | `/auth/callback`, `/auth/confirm` | Finish email links (implicit / PKCE / `token_hash`); no manual UI |
-| `/projects` | Signed in **and** `user_profiles.admin` — project list |
-| `/projects/home-services-app` | Authenticated — Home Services App experiment |
+| `/projects` | **Signed in** — project list (guests are redirected to **Sign in**). |
+| `/embed/home-services/:companySlug` | **Public** — intake widget (e.g. `parker-electric`); **`X-Embed-Key`** / **`?embedKey=`**; reflecting CORS for tenant origins. Signed-in users see **← Projects**. |
+| `/projects/home-services-app` | **Admins only** — internal Home Services studio page (not linked from the hub; direct URL). |
