@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../../auth/useAuth'
+import { apiUrl } from '../../lib/apiUrl'
 
 type NoteRow = {
   id: string
@@ -47,7 +48,7 @@ export function HomeServicesAppPage() {
   useEffect(() => {
     if (!session?.access_token) return
     let cancelled = false
-    void fetch('/api/projects/home-services-app/me', {
+    void fetch(apiUrl('/api/projects/home-services-app/me'), {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
       .then(async (r) => {

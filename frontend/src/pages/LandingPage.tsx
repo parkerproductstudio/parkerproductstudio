@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
+import { apiUrl } from '../lib/apiUrl'
 
 type Meta = {
   name: string
@@ -27,7 +28,7 @@ export function LandingPage() {
       tagline:
         'Principal product engineering for consumer and business applications—with AI agents when they are the right tool.',
     }
-    fetch('/api/meta')
+    fetch(apiUrl('/api/meta'))
       .then((r) => {
         if (!r.ok) throw new Error('Bad response')
         return r.json() as Promise<Meta>

@@ -20,6 +20,8 @@ Copy `.env.example` to **`.env` in the repository root**. Vite is configured wit
 | `SUPABASE_URL` | Server | Same project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Service role key (never expose to browser) |
 | `ALLOWED_ADMIN_EMAILS` | Server | Comma-separated emails allowed into `/projects` and `/api/projects/*`. **Empty = nobody** (use this with public sign-up so random accounts stay blocked until you add them). |
+| `VITE_API_BASE_URL` | Frontend (build) | Optional. Full origin of the Express API **with no trailing slash** when the SPA is on a different host (e.g. `https://your-api.onrender.com`). Omit for same-origin deploys. |
+| `CORS_ORIGINS` | Server | Production only: comma-separated **exact** origins allowed to call the API (e.g. `https://your-site.onrender.com`). Required for split static + API. |
 
 ## Supabase setup
 
@@ -53,6 +55,29 @@ Use a **Web Service** (not a separate static site) so Express serves both the AP
 - **Environment**: set the same variables as in `.env` (including all `VITE_*` vars so the **build** embeds them in the client bundle). **`SUPABASE_URL`** and **`SUPABASE_SERVICE_ROLE_KEY`** must be set here too—`/api/auth/project-access` runs on the server; without them, sign-in works in the browser but `/projects` shows “Could not verify access”.
 
 After deploy, add your custom domain under the service **Settings → Custom Domains**.
+
+### Split static “Web” + API Web Service on Render
+
+**API service**
+
+- **Root directory:** repository root (recommended) or `backend` if you adjust install/build.
+- **Build command:** `npm install && npm run build -w backend`
+- **Start command:** `npm run start -w backend`
+- **Environment:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ADMIN_EMAILS`, and **`CORS_ORIGINS`** set to your **static site origin(s)** only (comma-separated, no path), e.g. `https://parkerproductstudio.onrender.com`. Include `www` separately if you use it. Logs will confirm CORS on boot.
+
+**Static / Web service** (Render Static Site or Web Service serving `frontend/dist`)
+
+- **Build command:** `npm install && npm run build -w frontend` (from repo root), or `cd frontend && npm install && npm run build` if root is `frontend` only.
+- **Publish directory:** `frontend/dist`
+- **Environment (build-time):** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and **`VITE_API_BASE_URL`** = your API origin with **no trailing slash**, e.g. `https://parkerproductstudio-api.onrender.com`
+
+**Supabase → URL configuration:** **Site URL** and **Redirect URLs** must use the **static site** origin (where users open the app), not the API host.
+
+**Unified alternative:** One Web Service from the repo root with `npm install && npm run build` and `npm start` — leave **`VITE_API_BASE_URL`** unset and **`CORS_ORIGINS`** unset; the SPA is served from the same origin as `/api`.
+
+**API-only note:** If `frontend/dist` is missing next to the API, Express runs **API only** (no ENOENT). Split deploy is the intended use case for that layout.
+
+**Custom SPA path on the API box:** set **`CLIENT_DIST`** to an absolute path if you copy `frontend/dist` there.
 
 ### Migrating from a Render Static Site
 

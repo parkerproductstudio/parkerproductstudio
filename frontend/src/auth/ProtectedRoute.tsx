@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
 import { useAuth } from './useAuth'
+import { apiUrl } from '../lib/apiUrl'
 import { ProjectAccessDeniedPage } from '../pages/ProjectAccessDeniedPage'
 
 type AccessState = 'unknown' | 'allowed' | 'denied' | 'error'
@@ -23,7 +24,7 @@ export function ProtectedRoute() {
     setAccess('unknown')
     setAccessErrorDetail(null)
 
-    void fetch('/api/auth/project-access', {
+    void fetch(apiUrl('/api/auth/project-access'), {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
       .then(async (r) => {
