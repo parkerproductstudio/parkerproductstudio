@@ -1,0 +1,3 @@
+# SPA fallback — copied to dist/ by Vite. Lets deep links like /demo/parker-electric load the app.
+# Supported by Netlify, Cloudflare Pages, and Render static sites (see Render redirects docs).
+/* /index.html 200

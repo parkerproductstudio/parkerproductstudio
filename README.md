@@ -93,6 +93,7 @@ After deploy, add your custom domain under the service **Settings → Custom Dom
 - **Build command:** `npm install && npm run build -w frontend` (from repo root), or `cd frontend && npm install && npm run build` if root is `frontend` only.
 - **Publish directory:** `frontend/dist`
 - **Environment (build-time):** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and **`VITE_API_BASE_URL`** = your API origin with **no trailing slash**, e.g. `https://parkerproductstudio-api.onrender.com`
+- **SPA deep links** (`/projects`, `/demo/parker-electric`, `/embed/...`): the build copies **`frontend/public/_redirects`** into **`dist/`** so hosts that honor it rewrite `/*` → `/index.html` with status **200**. If you still get **404** on refresh or direct links, add a **rewrite** in your host’s dashboard (Render: Static Site **Redirects/Rewrites** → source `/*`, destination `/index.html`, action **Rewrite**). **Cloudflare** in front of a bucket or Pages: same idea (rewrite to `index.html` for HTML navigations).
 
 **Supabase → URL configuration:** **Site URL** and **Redirect URLs** must use the **static site** origin (where users open the app), not the API host.
 
