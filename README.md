@@ -122,5 +122,6 @@ Point the domain at the new Web Service instead of the static site, or delete th
 | `/signup` | Public sign up (email confirmation follows your Supabase settings) |
 | `/auth/callback`, `/auth/confirm` | Finish email links (implicit / PKCE / `token_hash`); no manual UI |
 | `/projects` | **Signed in** — project list (guests are redirected to **Sign in**). |
-| `/embed/home-services/:companySlug` | **Public** — intake widget (e.g. `parker-electric`); **`X-Embed-Key`** / **`?embedKey=`**; reflecting CORS for tenant origins. Signed-in users see **← Projects**. |
+| `/embed/home-services/:companySlug` | **Public** — intake widget (no sign-in). **`X-Embed-Key`** / **`?embedKey=`**; reflecting CORS for tenant origins. Signed-in users see **← Projects**. |
+| `/demo/parker-electric` | **Public** — short alias → same as `/embed/home-services/parker-electric` (query string preserved, e.g. **`?embedKey=`**). |
 | `/projects/home-services-app` | **Admins only** — internal Home Services studio page (not linked from the hub; direct URL). |

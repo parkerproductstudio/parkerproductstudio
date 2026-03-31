@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { AdminRoute } from './auth/AdminRoute'
 import { SignedInRoute } from './auth/SignedInRoute'
@@ -13,6 +13,17 @@ import { ProjectsLayout } from './pages/ProjectsLayout'
 
 import './App.css'
 
+/** Short public URL for demos; preserves ?embedKey= etc. */
+function DemoParkerElectricEmbedRedirect() {
+  const { search } = useLocation()
+  return (
+    <Navigate
+      to={{ pathname: '/embed/home-services/parker-electric', search }}
+      replace
+    />
+  )
+}
+
 export default function App() {
   return (
     <Routes>
@@ -25,6 +36,10 @@ export default function App() {
       <Route
         path="/embed/home-services/:companySlug"
         element={<EmbedHomeServicesPage />}
+      />
+      <Route
+        path="/demo/parker-electric"
+        element={<DemoParkerElectricEmbedRedirect />}
       />
       <Route element={<SignedInRoute />}>
         <Route path="projects" element={<ProjectsLayout />}>
