@@ -26,6 +26,11 @@ export type ExtractedContact = {
   customer_address: string | null
 }
 
+export type ExtractedSessionInsights = ExtractedContact & {
+  job_summary: string | null
+  supplies: string[]
+}
+
 export function isContactRecordComplete(s: {
   customer_name?: string | null
   customer_phone?: string | null
@@ -53,7 +58,17 @@ export function formatRowsAsTranscript(rows: MessageRow[]): string {
   return lines.join('\n\n')
 }
 
-function parseJsonExtract(raw: string): ExtractedContact {
+/** Parsed supplies: always an array; empty if absent or invalid. */
+function parseSupplies(v: unknown): string[] {
+  if (v == null) return []
+  if (!Array.isArray(v)) return []
+  return v
+    .filter((x): x is string => typeof x === 'string')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+function parseJsonExtract(raw: string): ExtractedSessionInsights {
   const t = raw.trim()
   const start = t.indexOf('{')
   const end = t.lastIndexOf('}')
@@ -73,12 +88,14 @@ function parseJsonExtract(raw: string): ExtractedContact {
     customer_phone: str('customer_phone'),
     customer_email: str('customer_email'),
     customer_address: str('customer_address'),
+    job_summary: str('job_summary'),
+    supplies: parseSupplies(j.supplies),
   }
 }
 
-export async function extractContactFromTranscript(
+export async function extractSessionInsightsFromTranscript(
   transcript: string,
-): Promise<ExtractedContact> {
+): Promise<ExtractedSessionInsights> {
   const key = process.env.ANTHROPIC_API_KEY?.trim()
   if (!key) {
     throw Object.assign(new Error('ANTHROPIC_API_KEY is not configured'), {
@@ -86,12 +103,20 @@ export async function extractContactFromTranscript(
     })
   }
   const client = new Anthropic({ apiKey: key })
-  const prompt = `Read this support chat transcript. Extract contact details the customer explicitly provided (not guesses).
+
+  const prompt = `Read this home-services intake chat transcript. Follow each field rule carefully.
 
 Return ONLY valid JSON, no markdown, in this exact shape:
-{"customer_name":string|null,"customer_phone":string|null,"customer_email":string|null,"customer_address":string|null}
+{"customer_name":string|null,"customer_phone":string|null,"customer_email":string|null,"customer_address":string|null,"job_summary":string|null,"supplies":string[]}
 
-Use null for anything not clearly stated. Combine address into one string if split across messages. Normalize phone to digits/plus/format as given.
+- Contact fields: only if the customer explicitly gave them (do not guess). Combine address into one string if split across messages.
+- job_summary: one or two sentences summarizing the service work (scope, location in home, urgency). null if nothing substantive yet.
+- supplies: always a JSON array (never null). Short strings only.
+
+  DECIDE WHICH MODE FROM THE TRANSCRIPT:
+  (A) If the customer has clearly provided full name, phone number, AND a service street address (city/state or ZIP may be included), treat intake contact as complete for this purpose. Then supplies must include: (1) anything explicitly mentioned in the thread, AND (2) typical materials and parts a licensed electrician would likely bring for the described work — aim for 3–14 items when job scope is clear (e.g. new kitchen outlet → GFCI or standard receptacle, wall plate, NM cable/Romex if a new run is implied, wire nuts, staples, voltage tester). Use generic descriptions; do not invent manufacturer part numbers or exact wire gauges unless stated.
+
+  (B) If any of name, phone, or service address is still missing or only promised ("I'll text it"), only list supplies that were explicitly mentioned; use [] if none were mentioned.
 
 Transcript:
 ---
@@ -100,12 +125,25 @@ ${transcript}
 
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 400,
+    max_tokens: 1200,
     messages: [{ role: 'user', content: prompt }],
   })
   const blocks = response.content.filter((b) => b.type === 'text')
   const raw = blocks.map((b) => (b as { text: string }).text).join('')
   return parseJsonExtract(raw)
+}
+
+/** @deprecated use extractSessionInsightsFromTranscript */
+export async function extractContactFromTranscript(
+  transcript: string,
+): Promise<ExtractedContact> {
+  const full = await extractSessionInsightsFromTranscript(transcript)
+  return {
+    customer_name: full.customer_name,
+    customer_phone: full.customer_phone,
+    customer_email: full.customer_email,
+    customer_address: full.customer_address,
+  }
 }
 
 export function mergeContact(
@@ -116,7 +154,7 @@ export function mergeContact(
     customer_address?: string | null
     contact_collected_at?: string | null
   },
-  extracted: ExtractedContact,
+  extracted: ExtractedContact | ExtractedSessionInsights,
 ): {
   customer_name: string | null
   customer_phone: string | null
@@ -149,4 +187,29 @@ export function mergeContact(
     customer_address: address,
     contact_collected_at,
   }
+}
+
+function normalizeSuppliesArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  return v
+    .filter((x): x is string => typeof x === 'string')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+export function mergeJobInsights(
+  existing: { job_summary?: string | null; supplies?: unknown },
+  extracted: ExtractedSessionInsights,
+): { job_summary: string | null; supplies: string[] } {
+  const prevSummary = existing.job_summary?.trim() || null
+  const extSummary = extracted.job_summary?.trim() || null
+  const job_summary = extSummary ?? prevSummary
+
+  const prevList = normalizeSuppliesArray(existing.supplies)
+  const set = new Set<string>(prevList)
+  for (const s of extracted.supplies) {
+    const t = s.trim()
+    if (t) set.add(t)
+  }
+  return { job_summary, supplies: [...set] }
 }

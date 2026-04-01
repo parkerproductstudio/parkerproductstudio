@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '../../auth/useAuth'
+import { useProjectAccess } from '../../auth/useProjectAccess'
 import { apiUrl } from '../../lib/apiUrl'
+
+import { AdminSessionsPanel } from './AdminSessionsPanel'
 
 const EMBED_API = '/api/public/home-services'
 const SESSION_STORAGE_PREFIX = 'parker-hs-embed:v1'
+
+type EmbedMainTab = 'chat' | 'admin'
 
 type ChatMessage = {
   id: string
@@ -168,8 +173,11 @@ function EmbedMessageImages({
 
 export function EmbedHomeServicesPage() {
   const { session } = useAuth()
+  const { projectAccess, checking: accessChecking } = useProjectAccess()
+  const location = useLocation()
   const { companySlug } = useParams<{ companySlug: string }>()
   const [searchParams] = useSearchParams()
+  const [mainTab, setMainTab] = useState<EmbedMainTab>('chat')
   const embedKey =
     searchParams.get('embedKey')?.trim() ||
     (import.meta.env.VITE_HOME_SERVICES_EMBED_KEY as string | undefined)?.trim() ||
@@ -392,9 +400,15 @@ export function EmbedHomeServicesPage() {
   }
 
   const title = companyName ?? (companySlug ? slugToTitle(companySlug) : 'Service request')
+  const slug = companySlug?.trim() || 'parker-electric'
+  const loginReturnPath = `${location.pathname}${location.search}`
 
   return (
-    <div className="embed-hs">
+    <div
+      className={
+        mainTab === 'admin' ? 'embed-hs embed-hs--admin-layout' : 'embed-hs'
+      }
+    >
       {session ? (
         <div className="embed-hs-top">
           <Link to="/projects" className="embed-hs-back">
@@ -402,6 +416,66 @@ export function EmbedHomeServicesPage() {
           </Link>
         </div>
       ) : null}
+
+      <div
+        className="embed-hs-tabs"
+        role="tablist"
+        aria-label="Embed demo sections"
+      >
+        <button
+          type="button"
+          role="tab"
+          id="embed-tab-chat"
+          aria-selected={mainTab === 'chat'}
+          aria-controls="embed-panel-chat"
+          className={
+            mainTab === 'chat' ? 'embed-hs-tab embed-hs-tab--active' : 'embed-hs-tab'
+          }
+          onClick={() => setMainTab('chat')}
+        >
+          Chat
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="embed-tab-admin"
+          aria-selected={mainTab === 'admin'}
+          aria-controls="embed-panel-admin"
+          className={
+            mainTab === 'admin' ? 'embed-hs-tab embed-hs-tab--active' : 'embed-hs-tab'
+          }
+          onClick={() => setMainTab('admin')}
+        >
+          Admin
+        </button>
+      </div>
+
+      <div
+        id="embed-panel-admin"
+        role="tabpanel"
+        aria-labelledby="embed-tab-admin"
+        hidden={mainTab !== 'admin'}
+        className="embed-hs-tab-panel embed-hs-tab-panel--admin"
+      >
+        <AdminSessionsPanel
+          active={mainTab === 'admin'}
+          accessToken={session?.access_token}
+          accessChecking={accessChecking}
+          projectAccess={projectAccess}
+          companySlug={slug}
+          loginReturnPath={loginReturnPath}
+          variant="embed"
+          headingId="embed-admin-heading"
+        />
+      </div>
+
+      <div
+        id="embed-panel-chat"
+        role="tabpanel"
+        aria-labelledby="embed-tab-chat"
+        hidden={mainTab !== 'chat'}
+        className="embed-hs-tab-panel embed-hs-tab-panel--chat"
+      >
       <header className="embed-hs-header">
         <h1 className="embed-hs-title">{title}</h1>
         <p className="embed-hs-sub">
@@ -490,6 +564,7 @@ export function EmbedHomeServicesPage() {
           {sending ? 'Sending…' : 'Send'}
         </button>
       </form>
+      </div>
     </div>
   )
 }

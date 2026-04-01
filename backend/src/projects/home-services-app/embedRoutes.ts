@@ -7,10 +7,11 @@ import { runClaudeReply, validateImagePayload } from './claudeChat.js'
 import { fitImageForAnthropic } from './fitImageForAnthropic.js'
 import {
   CONTACT_COLLECTION_ADDENDUM,
-  extractContactFromTranscript,
+  extractSessionInsightsFromTranscript,
   formatRowsAsTranscript,
   isContactRecordComplete,
   mergeContact,
+  mergeJobInsights,
 } from './contactExtract.js'
 import { isAllowedEmbedStoragePath } from './embedStoragePath.js'
 import type { EmbedCompany, MessageRow, SessionRow } from './embedTypes.js'
@@ -217,7 +218,7 @@ homeServicesEmbedRouter.post('/sessions/:sessionId/messages', async (req, res) =
   const { data: sess, error: se } = await supabase
     .from('home_services_sessions')
     .select(
-      'id, company_id, status, customer_name, customer_phone, customer_email, customer_address, contact_collected_at',
+      'id, company_id, status, customer_name, customer_phone, customer_email, customer_address, contact_collected_at, job_summary, supplies',
     )
     .eq('id', sessionId)
     .maybeSingle()
@@ -295,6 +296,8 @@ homeServicesEmbedRouter.post('/sessions/:sessionId/messages', async (req, res) =
     customer_email?: string | null
     customer_address?: string | null
     contact_collected_at?: string | null
+    job_summary?: string | null
+    supplies?: unknown
   }
   const contactComplete = isContactRecordComplete(sessionContact)
   const systemAddendum = contactComplete ? undefined : CONTACT_COLLECTION_ADDENDUM
@@ -325,38 +328,39 @@ homeServicesEmbedRouter.post('/sessions/:sessionId/messages', async (req, res) =
     return
   }
 
-  if (!contactComplete) {
-    try {
-      const pendingAssistant: MessageRow = {
-        id: 'pending',
-        session_id: sessionId,
-        role: 'assistant',
-        content: assistantText,
-        image_paths: [],
-        created_at: new Date().toISOString(),
-      }
-      const transcript = formatRowsAsTranscript([
-        ...(history as MessageRow[]),
-        pendingAssistant,
-      ])
-      const extracted = await extractContactFromTranscript(transcript)
-      const merged = mergeContact(sessionContact, extracted)
-      const { error: upContact } = await supabase
-        .from('home_services_sessions')
-        .update({
-          customer_name: merged.customer_name,
-          customer_phone: merged.customer_phone,
-          customer_email: merged.customer_email,
-          customer_address: merged.customer_address,
-          contact_collected_at: merged.contact_collected_at,
-        })
-        .eq('id', sessionId)
-      if (upContact) {
-        console.warn('[home-services] session contact update failed', upContact.message)
-      }
-    } catch (err) {
-      console.warn('[home-services] contact extraction failed', err)
+  try {
+    const pendingAssistant: MessageRow = {
+      id: 'pending',
+      session_id: sessionId,
+      role: 'assistant',
+      content: assistantText,
+      image_paths: [],
+      created_at: new Date().toISOString(),
     }
+    const transcript = formatRowsAsTranscript([
+      ...(history as MessageRow[]),
+      pendingAssistant,
+    ])
+    const extracted = await extractSessionInsightsFromTranscript(transcript)
+    const mergedContact = mergeContact(sessionContact, extracted)
+    const mergedJob = mergeJobInsights(sessionContact, extracted)
+    const { error: upSession } = await supabase
+      .from('home_services_sessions')
+      .update({
+        customer_name: mergedContact.customer_name,
+        customer_phone: mergedContact.customer_phone,
+        customer_email: mergedContact.customer_email,
+        customer_address: mergedContact.customer_address,
+        contact_collected_at: mergedContact.contact_collected_at,
+        job_summary: mergedJob.job_summary,
+        supplies: mergedJob.supplies,
+      })
+      .eq('id', sessionId)
+    if (upSession) {
+      console.warn('[home-services] session insights update failed', upSession.message)
+    }
+  } catch (err) {
+    console.warn('[home-services] session insights extraction failed', err)
   }
 
   res.json({

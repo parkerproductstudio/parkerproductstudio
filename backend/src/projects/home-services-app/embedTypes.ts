@@ -20,6 +20,8 @@ export type SessionContactFields = {
   customer_email?: string | null
   customer_address?: string | null
   contact_collected_at?: string | null
+  job_summary?: string | null
+  supplies?: unknown
 }
 
 export type MessageRow = {

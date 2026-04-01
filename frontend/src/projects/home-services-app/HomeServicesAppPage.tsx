@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../../auth/useAuth'
+import { useProjectAccess } from '../../auth/useProjectAccess'
 import { apiUrl } from '../../lib/apiUrl'
+
+import { AdminSessionsPanel } from './AdminSessionsPanel'
 
 type NoteRow = {
   id: string
@@ -15,8 +18,12 @@ type MeResponse = {
   project: string
 }
 
+type StudioTab = 'studio' | 'admin'
+
 export function HomeServicesAppPage() {
   const { supabase, session } = useAuth()
+  const { projectAccess, checking: accessChecking } = useProjectAccess()
+  const [tab, setTab] = useState<StudioTab>('studio')
   const [notes, setNotes] = useState<NoteRow[]>([])
   const [body, setBody] = useState('')
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -98,7 +105,7 @@ export function HomeServicesAppPage() {
   }
 
   return (
-    <div className="project-app">
+    <div className={`project-app ${tab === 'admin' ? 'project-app--wide' : ''}`}>
       <nav className="breadcrumb">
         <Link to="/projects">Projects</Link>
         <span aria-hidden="true"> / </span>
@@ -120,6 +127,60 @@ export function HomeServicesAppPage() {
         </p>
       </header>
 
+      <div
+        className="project-tabs"
+        role="tablist"
+        aria-label="Home services studio sections"
+      >
+        <button
+          type="button"
+          role="tab"
+          id="tab-studio"
+          aria-selected={tab === 'studio'}
+          aria-controls="panel-studio"
+          className={tab === 'studio' ? 'project-tab project-tab--active' : 'project-tab'}
+          onClick={() => setTab('studio')}
+        >
+          Studio
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-admin"
+          aria-selected={tab === 'admin'}
+          aria-controls="panel-admin"
+          className={tab === 'admin' ? 'project-tab project-tab--active' : 'project-tab'}
+          onClick={() => setTab('admin')}
+        >
+          Admin
+        </button>
+      </div>
+
+      <div
+        id="panel-admin"
+        role="tabpanel"
+        aria-labelledby="tab-admin"
+        hidden={tab !== 'admin'}
+        className="project-tab-panel"
+      >
+        <AdminSessionsPanel
+          active={tab === 'admin'}
+          accessToken={session?.access_token}
+          accessChecking={accessChecking}
+          projectAccess={projectAccess}
+          companySlug="parker-electric"
+          variant="studio"
+          headingId="admin-heading"
+        />
+      </div>
+
+      <div
+        id="panel-studio"
+        role="tabpanel"
+        aria-labelledby="tab-studio"
+        hidden={tab !== 'studio'}
+        className="project-tab-panel"
+      >
       <section className="project-panel" aria-labelledby="api-heading">
         <h2 id="api-heading">Backend check</h2>
         <p className="panel-meta">
@@ -172,6 +233,7 @@ export function HomeServicesAppPage() {
           <p className="panel-muted">No notes yet.</p>
         ) : null}
       </section>
+      </div>
     </div>
   )
 }
