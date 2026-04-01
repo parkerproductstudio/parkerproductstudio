@@ -122,6 +122,53 @@ homeServicesEmbedRouter.post('/sessions', async (req, res) => {
   })
 })
 
+/** List intake sessions for the embed key’s company (same auth as chat). */
+homeServicesEmbedRouter.get('/sessions', async (req, res) => {
+  const supabase = getSupabaseAdmin()
+  const company = (req as ReqWithCompany).embedCompany
+  if (!supabase || !company) {
+    res.status(503).json({ error: 'Server data store is not configured' })
+    return
+  }
+  const rawSlug = req.query.companySlug
+  const requestedSlug =
+    typeof rawSlug === 'string' && rawSlug.trim()
+      ? rawSlug.trim()
+      : company.slug
+  if (requestedSlug !== company.slug) {
+    res.status(403).json({ error: 'companySlug does not match this embed key' })
+    return
+  }
+
+  const { data: rows, error: sErr } = await supabase
+    .from('home_services_sessions')
+    .select(
+      'id, created_at, updated_at, status, customer_name, customer_phone, customer_email, customer_address, job_summary, supplies',
+    )
+    .eq('company_id', company.id)
+    .order('created_at', { ascending: false })
+  if (sErr) {
+    res.status(500).json({ error: sErr.message })
+    return
+  }
+
+  const sessions = (rows ?? []).map((row) => {
+    const suppliesRaw = (row as { supplies?: unknown }).supplies
+    const supplies = Array.isArray(suppliesRaw)
+      ? suppliesRaw.filter((x): x is string => typeof x === 'string')
+      : []
+    return {
+      ...(row as object),
+      supplies,
+    }
+  })
+
+  res.json({
+    company: { slug: company.slug, name: company.name },
+    sessions,
+  })
+})
+
 homeServicesEmbedRouter.get('/sessions/:sessionId/messages', async (req, res) => {
   const supabase = getSupabaseAdmin()
   const company = (req as ReqWithCompany).embedCompany

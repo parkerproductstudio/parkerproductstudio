@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 
 import { apiUrl } from '../../lib/apiUrl'
 
+const EMBED_PUBLIC_BASE = '/api/public/home-services'
+
 export type AdminSessionRow = {
   id: string
   created_at: string
@@ -29,31 +31,45 @@ function sessionHasSummaryAndSupplies(s: AdminSessionRow): boolean {
   return Boolean(summary) && supplies.length > 0
 }
 
-export type AdminSessionsPanelProps = {
+type AdminSessionsPanelBase = {
   /** When false, skips fetch (e.g. tab not selected). */
   active: boolean
-  accessToken: string | undefined
-  accessChecking: boolean
-  projectAccess: boolean
   companySlug: string
-  /** Path (+ optional search) for post-login redirect from embed demo. */
-  loginReturnPath?: string
-  variant: 'studio' | 'embed'
   headingId?: string
   title?: string
 }
 
-export function AdminSessionsPanel({
-  active,
-  accessToken,
-  accessChecking,
-  projectAccess,
-  companySlug,
-  loginReturnPath,
-  variant,
-  headingId = 'admin-sessions-heading',
-  title,
-}: AdminSessionsPanelProps) {
+export type AdminSessionsPanelProps = AdminSessionsPanelBase &
+  (
+    | {
+        variant: 'studio'
+        accessToken: string | undefined
+        accessChecking: boolean
+        projectAccess: boolean
+        loginReturnPath?: string
+      }
+    | {
+        variant: 'embed'
+        /** Same key as chat; sessions list requires it (or ?embedKey in URL). */
+        embedKey: string
+      }
+  )
+
+export function AdminSessionsPanel(props: AdminSessionsPanelProps) {
+  const {
+    active,
+    companySlug,
+    headingId = 'admin-sessions-heading',
+    title,
+    variant,
+  } = props
+
+  const accessToken = variant === 'studio' ? props.accessToken : undefined
+  const accessChecking = variant === 'studio' ? props.accessChecking : false
+  const projectAccess = variant === 'studio' ? props.projectAccess : false
+  const loginReturnPath = variant === 'studio' ? props.loginReturnPath : undefined
+  const embedKey = variant === 'embed' ? props.embedKey : ''
+
   const [sessions, setSessions] = useState<AdminSessionRow[]>([])
   const [company, setCompany] = useState<{ slug: string; name: string } | null>(
     null,
@@ -61,22 +77,45 @@ export function AdminSessionsPanel({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const canFetch =
+  const canFetchStudio =
+    variant === 'studio' &&
     active &&
     Boolean(accessToken) &&
     projectAccess &&
     !accessChecking
 
+  const canFetchEmbed =
+    variant === 'embed' && active && Boolean(embedKey.trim())
+
+  const canFetch = variant === 'studio' ? canFetchStudio : canFetchEmbed
+
   useEffect(() => {
-    if (!canFetch || !accessToken) return
+    if (!active) return
+
+    if (variant === 'studio') {
+      if (!canFetchStudio || !accessToken) return
+    } else {
+      if (!canFetchEmbed) return
+    }
+
     let cancelled = false
     setLoading(true)
     setError(null)
+
     const q = new URLSearchParams({ companySlug })
-    void fetch(
-      apiUrl(`/api/projects/home-services-app/sessions?${q.toString()}`),
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    )
+    const url =
+      variant === 'embed'
+        ? apiUrl(`${EMBED_PUBLIC_BASE}/sessions?${q.toString()}`)
+        : apiUrl(`/api/projects/home-services-app/sessions?${q.toString()}`)
+
+    const headers: Record<string, string> = {}
+    if (variant === 'embed') {
+      headers['X-Embed-Key'] = embedKey.trim()
+    } else {
+      headers.Authorization = `Bearer ${accessToken}`
+    }
+
+    void fetch(url, { headers })
       .then(async (r) => {
         if (!r.ok) {
           const j = (await r.json().catch(() => ({}))) as { error?: string }
@@ -102,7 +141,15 @@ export function AdminSessionsPanel({
     return () => {
       cancelled = true
     }
-  }, [active, accessToken, canFetch, companySlug])
+  }, [
+    active,
+    variant,
+    companySlug,
+    canFetchStudio,
+    canFetchEmbed,
+    accessToken,
+    embedKey,
+  ])
 
   if (!active) return null
 
@@ -122,6 +169,11 @@ export function AdminSessionsPanel({
 
   const visibleSessions = sessions.filter(sessionHasSummaryAndSupplies)
 
+  const endpointLabel =
+    variant === 'embed'
+      ? `GET ${EMBED_PUBLIC_BASE}/sessions?companySlug=${companySlug} (header X-Embed-Key)`
+      : `GET /api/projects/home-services-app/sessions?companySlug=${companySlug}`
+
   return (
     <section
       className={variant === 'studio' ? 'project-panel' : 'embed-hs-admin'}
@@ -131,9 +183,7 @@ export function AdminSessionsPanel({
         {title ?? defaultTitle}
       </h2>
       <p className={metaClass}>
-        <code>
-          GET /api/projects/home-services-app/sessions?companySlug={companySlug}
-        </code>
+        <code>{endpointLabel}</code>
         {company ? (
           <>
             {' '}
@@ -142,11 +192,11 @@ export function AdminSessionsPanel({
         ) : null}
       </p>
 
-      {accessChecking && accessToken ? (
+      {variant === 'studio' && accessChecking && accessToken ? (
         <p className={mutedClass}>Checking access…</p>
       ) : null}
 
-      {!accessToken ? (
+      {variant === 'studio' && !accessToken ? (
         <p className={mutedClass}>
           Sign in with a studio admin account to view intake sessions.{' '}
           <Link to="/login" state={loginState}>
@@ -155,11 +205,21 @@ export function AdminSessionsPanel({
         </p>
       ) : null}
 
-      {accessToken && !accessChecking && !projectAccess ? (
+      {variant === 'studio' &&
+      accessToken &&
+      !accessChecking &&
+      !projectAccess ? (
         <p className={mutedClass}>
           Your account does not have studio admin access. Ask an owner to set{' '}
           <code>user_profiles.admin</code>, or open the{' '}
           <Link to="/projects">projects hub</Link>.
+        </p>
+      ) : null}
+
+      {variant === 'embed' && !embedKey.trim() ? (
+        <p className={mutedClass}>
+          Add your embed key (set <code>VITE_HOME_SERVICES_EMBED_KEY</code> or{' '}
+          <code>?embedKey=</code> in the URL) to load sessions — same key as the chat widget.
         </p>
       ) : null}
 

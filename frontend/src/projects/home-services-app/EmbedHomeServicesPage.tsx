@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '../../auth/useAuth'
-import { useProjectAccess } from '../../auth/useProjectAccess'
 import { apiUrl } from '../../lib/apiUrl'
 
 import { AdminSessionsPanel } from './AdminSessionsPanel'
@@ -173,8 +172,6 @@ function EmbedMessageImages({
 
 export function EmbedHomeServicesPage() {
   const { session } = useAuth()
-  const { projectAccess, checking: accessChecking } = useProjectAccess()
-  const location = useLocation()
   const { companySlug } = useParams<{ companySlug: string }>()
   const [searchParams] = useSearchParams()
   const [mainTab, setMainTab] = useState<EmbedMainTab>('chat')
@@ -401,7 +398,6 @@ export function EmbedHomeServicesPage() {
 
   const title = companyName ?? (companySlug ? slugToTitle(companySlug) : 'Service request')
   const slug = companySlug?.trim() || 'parker-electric'
-  const loginReturnPath = `${location.pathname}${location.search}`
 
   return (
     <div
@@ -459,12 +455,9 @@ export function EmbedHomeServicesPage() {
       >
         <AdminSessionsPanel
           active={mainTab === 'admin'}
-          accessToken={session?.access_token}
-          accessChecking={accessChecking}
-          projectAccess={projectAccess}
-          companySlug={slug}
-          loginReturnPath={loginReturnPath}
           variant="embed"
+          embedKey={embedKey}
+          companySlug={slug}
           headingId="embed-admin-heading"
         />
       </div>
