@@ -46,32 +46,36 @@ homiRouter.post('/lookup', attachSupabaseUser, async (req, res) => {
     return
   }
 
-  const results = await lookupProperty(validation.addr)
-  const addressKey = normalizeAddressKey(validation.addr)
-  const providersUsed = getProviders()
-    .filter((p) => p.enabled)
-    .map((p) => p.name)
+  try {
+    const results = await lookupProperty(validation.addr)
+    const addressKey = normalizeAddressKey(validation.addr)
+    const providersUsed = getProviders()
+      .filter((p) => p.enabled)
+      .map((p) => p.name)
 
-  const { data: search, error: searchErr } = await supabase
-    .from('homi_searches')
-    .insert({
-      user_id: userId,
-      street: validation.addr.street,
-      city: validation.addr.city,
-      state: validation.addr.state,
-      zip: validation.addr.zip,
-      address_key: addressKey,
-      providers_used: providersUsed,
-    })
-    .select('id')
-    .single()
+    const { data: search, error: searchErr } = await supabase
+      .from('homi_searches')
+      .insert({
+        user_id: userId,
+        street: validation.addr.street,
+        city: validation.addr.city,
+        state: validation.addr.state,
+        zip: validation.addr.zip,
+        address_key: addressKey,
+        providers_used: providersUsed,
+      })
+      .select('id')
+      .single()
 
-  if (searchErr || !search) {
-    res.status(500).json({ error: searchErr?.message ?? 'Failed to record search' })
-    return
+    if (searchErr || !search) {
+      res.status(500).json({ error: searchErr?.message ?? 'Failed to record search' })
+      return
+    }
+
+    res.json({ searchId: (search as { id: string }).id, results })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Internal error' })
   }
-
-  res.json({ searchId: (search as { id: string }).id, results })
 })
 
 homiRouter.get('/searches', attachSupabaseUser, async (req, res) => {
@@ -81,15 +85,19 @@ homiRouter.get('/searches', attachSupabaseUser, async (req, res) => {
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
-  const { data, error } = await supabase
-    .from('homi_searches')
-    .select('id, street, city, state, zip, providers_used, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(50)
-  if (error) {
-    res.status(500).json({ error: error.message })
-    return
+  try {
+    const { data, error } = await supabase
+      .from('homi_searches')
+      .select('id, street, city, state, zip, providers_used, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) {
+      res.status(500).json({ error: error.message })
+      return
+    }
+    res.json({ searches: data ?? [] })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Internal error' })
   }
-  res.json({ searches: data ?? [] })
 })

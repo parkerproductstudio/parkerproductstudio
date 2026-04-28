@@ -87,4 +87,32 @@ describe('lookupProperty', () => {
       expect.anything(),
     )
   })
+
+  it('isolates a thrown provider error to that provider only', async () => {
+    const throwingProvider: PropertyProvider = {
+      name: 'rentcast',
+      enabled: true,
+      lookup: vi.fn().mockRejectedValue(new Error('boom')),
+    }
+    const goodProvider = stubProvider('attom', true, {
+      ok: true,
+      data: { basics: { beds: 2 } },
+      raw: {},
+    })
+
+    const results = await lookupProperty(
+      { street: '123 Main St', city: 'Austin', state: 'TX', zip: '78701' },
+      {
+        providers: [throwingProvider, goodProvider],
+        readCache: async () => null,
+        writeCache: async () => undefined,
+      },
+    )
+
+    const rentcast = results.find((r) => r.provider === 'rentcast')!
+    const attom = results.find((r) => r.provider === 'attom')!
+    expect(rentcast.result.ok).toBe(false)
+    if (!rentcast.result.ok) expect(rentcast.result.message).toBe('boom')
+    expect(attom.result.ok).toBe(true)
+  })
 })

@@ -43,13 +43,25 @@ export async function lookupProperty(
           fromCache: false,
         }
       }
-      const cached = await readCache(p.name, key)
-      if (cached) {
-        return { provider: p.name, result: cached, fromCache: true }
+      try {
+        const cached = await readCache(p.name, key)
+        if (cached) {
+          return { provider: p.name, result: cached, fromCache: true }
+        }
+        const fresh = await p.lookup(addr)
+        await writeCache(p.name, addr, key, fresh)
+        return { provider: p.name, result: fresh, fromCache: false }
+      } catch (err) {
+        return {
+          provider: p.name,
+          result: {
+            ok: false,
+            reason: 'error',
+            message: err instanceof Error ? err.message : 'Unknown provider error',
+          },
+          fromCache: false,
+        }
       }
-      const fresh = await p.lookup(addr)
-      await writeCache(p.name, addr, key, fresh)
-      return { provider: p.name, result: fresh, fromCache: false }
     }),
   )
 }
