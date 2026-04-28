@@ -10,6 +10,7 @@ import {
   homeServicesAppRouter,
   homeServicesEmbedRouter,
 } from './projects/home-services-app/index.js'
+import { homiRouter } from './projects/homi/index.js'
 import { authRouter } from './routes/auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -91,6 +92,7 @@ app.get('/api/meta', (_req, res) => {
 app.use('/api/auth', authRouter)
 app.use('/api/projects/home-services-app', homeServicesAppRouter)
 app.use('/api/public/home-services', homeServicesEmbedRouter)
+app.use('/api/projects/homi', homiRouter)
 
 let prodClientDist: string | null = null
 if (isProd) {
