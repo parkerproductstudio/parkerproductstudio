@@ -1,0 +1,1 @@
+export { HomiPage } from './HomiPage'

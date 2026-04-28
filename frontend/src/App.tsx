@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AdminRoute } from './auth/AdminRoute'
 import { SignedInRoute } from './auth/SignedInRoute'
 import { EmbedHomeServicesPage, HomeServicesAppPage } from './projects/home-services-app'
+import { HomiPage } from './projects/homi'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
@@ -44,6 +45,7 @@ export default function App() {
       <Route element={<SignedInRoute />}>
         <Route path="projects" element={<ProjectsLayout />}>
           <Route index element={<ProjectsHubPage />} />
+          <Route path="homi" element={<HomiPage />} />
           <Route element={<AdminRoute />}>
             <Route path="home-services-app" element={<HomeServicesAppPage />} />
           </Route>
