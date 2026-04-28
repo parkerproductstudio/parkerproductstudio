@@ -17,9 +17,6 @@ create table if not exists public.homi_provider_lookups (
   unique (provider, address_key)
 );
 
-create index if not exists homi_provider_lookups_address_key_idx
-  on public.homi_provider_lookups (address_key);
-
 create table if not exists public.homi_searches (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users (id) on delete cascade,
