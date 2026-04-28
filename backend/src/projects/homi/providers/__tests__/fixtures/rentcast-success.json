@@ -1,0 +1,27 @@
+[
+  {
+    "id": "abc-123",
+    "formattedAddress": "123 Main St, Austin, TX 78701",
+    "addressLine1": "123 Main St",
+    "city": "Austin",
+    "state": "TX",
+    "zipCode": "78701",
+    "propertyType": "Single Family",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "squareFootage": 1820,
+    "lotSize": 6500,
+    "yearBuilt": 1968,
+    "lastSaleDate": "2021-05-14T00:00:00.000Z",
+    "lastSalePrice": 425000,
+    "owner": { "names": ["John Smith"] },
+    "taxAssessments": {
+      "2024": { "value": 410000, "year": 2024 },
+      "2023": { "value": 388000, "year": 2023 }
+    },
+    "propertyTaxes": {
+      "2024": { "total": 7820, "year": 2024 }
+    },
+    "features": { "floodZone": "X" }
+  }
+]
