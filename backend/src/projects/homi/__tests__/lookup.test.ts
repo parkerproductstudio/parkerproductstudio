@@ -80,6 +80,11 @@ describe('lookupProperty', () => {
     )
 
     expect(writeCache).toHaveBeenCalledOnce()
-    expect(writeCache.mock.calls[0]![0]).toBe('rentcast')
+    expect(writeCache).toHaveBeenCalledWith(
+      'rentcast',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
   })
 })
