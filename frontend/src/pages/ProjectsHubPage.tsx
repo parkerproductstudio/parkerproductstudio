@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 
+import { useProjectAccess } from '../auth/useProjectAccess'
+
 export function ProjectsHubPage() {
+  const { projectAccess } = useProjectAccess()
+
   return (
     <div className="projects-hub">
       <h1 className="projects-hub-title">Projects</h1>
@@ -20,15 +24,17 @@ export function ProjectsHubPage() {
             </span>
           </Link>
         </li>
-        <li>
-          <Link className="project-card" to="/projects/homi">
-            <span className="project-card-name">Homi</span>
-            <span className="project-card-desc">
-              Carfax for homes — POC. Look up a property and compare public-records data
-              across providers.
-            </span>
-          </Link>
-        </li>
+        {projectAccess ? (
+          <li>
+            <Link className="project-card" to="/projects/homi">
+              <span className="project-card-name">Homi</span>
+              <span className="project-card-desc">
+                Carfax for homes — POC. Look up a property and compare public-records data
+                across providers.
+              </span>
+            </Link>
+          </li>
+        ) : null}
       </ul>
     </div>
   )

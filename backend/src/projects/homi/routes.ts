@@ -1,7 +1,7 @@
 import { Router } from 'express'
 
 import { getSupabaseAdmin } from '../../lib/supabaseAdmin.js'
-import { attachSupabaseUser } from '../../middleware/attachSupabaseUser.js'
+import { requireSupabaseUser } from '../../middleware/requireSupabaseUser.js'
 import { normalizeAddressKey } from './addressKey.js'
 import { lookupProperty } from './lookup.js'
 import { getProviders } from './providers/registry.js'
@@ -27,7 +27,7 @@ function validateAddress(body: LookupBody): { ok: true; addr: { street: string; 
   return { ok: true, addr: { street, city, state, zip } }
 }
 
-homiRouter.post('/lookup', attachSupabaseUser, async (req, res) => {
+homiRouter.post('/lookup', ...requireSupabaseUser, async (req, res) => {
   const validation = validateAddress(req.body as LookupBody)
   if (!validation.ok) {
     res.status(400).json({ error: validation.error })
@@ -78,7 +78,7 @@ homiRouter.post('/lookup', attachSupabaseUser, async (req, res) => {
   }
 })
 
-homiRouter.get('/searches', attachSupabaseUser, async (req, res) => {
+homiRouter.get('/searches', ...requireSupabaseUser, async (req, res) => {
   const userId = req.supabaseUser?.id
   const supabase = getSupabaseAdmin()
   if (!userId || !supabase) {

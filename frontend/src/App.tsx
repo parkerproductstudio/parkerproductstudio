@@ -45,9 +45,9 @@ export default function App() {
       <Route element={<SignedInRoute />}>
         <Route path="projects" element={<ProjectsLayout />}>
           <Route index element={<ProjectsHubPage />} />
-          <Route path="homi" element={<HomiPage />} />
           <Route element={<AdminRoute />}>
             <Route path="home-services-app" element={<HomeServicesAppPage />} />
+            <Route path="homi" element={<HomiPage />} />
           </Route>
         </Route>
       </Route>
